@@ -13,11 +13,12 @@ public class ucClient {
 
 	    System.out.println("SOCKET= " + s);
 
-
-	    DataInputStream in = new DataInputStream(s.getInputStream());
-	    DataOutputStream out = new DataOutputStream(s.getOutputStream());
-
+		ObjectInputStream ino = new ObjectInputStream(s.getInputStream());
 		ObjectOutputStream outo = new ObjectOutputStream(s.getOutputStream());
+
+
+		DataOutputStream out = new DataOutputStream(s.getOutputStream());
+	    DataInputStream in = new DataInputStream(s.getInputStream());
 
 	    InputStreamReader input = new InputStreamReader(System.in);
 	    BufferedReader reader = new BufferedReader(input);
@@ -37,17 +38,25 @@ public class ucClient {
 			User novo = new User(name, pass);
 
 			outo.writeObject(novo);
-			login = in.readBoolean();
-
-			System.out.println("[CLIENT SIDE] LOGIN COM SUCESSO!");
-
-			String diretoriaAtual = in.readUTF();
-			System.out.println(diretoriaAtual);
 
 
-			// FALTA APAGAR
-			System.out.println(in.readUTF());
+			RespostaLogin respostaLogin = (RespostaLogin) ino.readObject();
+
+			System.out.println("[CLIENT SIDE] -> " + respostaLogin.toString());
+
+			login = (Boolean) respostaLogin.getResposta();
+
+			if (login)
+			{
+				String diretoriaAtual = (String) respostaLogin.getDirectoryAtual();
+				System.out.println("[CLIENT SIDE] LOGIN COM SUCESSO!");
+			}
+			else
+			{
+				System.out.println("[CLIENT SIDE] LOGIN SEM SUCESSO!");
+			}
 		}
+
 
 		System.out.println("Wanna Die");
 
@@ -57,6 +66,8 @@ public class ucClient {
 	    System.out.println("EOF:" + e.getMessage());
 	} catch (IOException e) {
 	    System.out.println("IO:" + e.getMessage());
+	} catch (ClassNotFoundException e) {
+		e.printStackTrace();
 	} finally {
 	    if (s != null)
 		try {

@@ -12,6 +12,12 @@ public class User implements Serializable {
         this.directory = username;
     }
 
+    public User(String username, String password, String directory) {
+        this.username = username;
+        this.password = password;
+        this.directory = directory;
+    }
+
     @Override
     public String toString() {
         return "User{" +
