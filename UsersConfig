@@ -1,0 +1,15 @@
+user:
+username: carlos
+password: pass
+directory: carlos
+
+
+user:
+username: madalena
+password: pass
+directory: madalena\testes
+
+user:
+username: andreia
+password: passs
+directory: andreia

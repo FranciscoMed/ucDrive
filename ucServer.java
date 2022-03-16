@@ -6,9 +6,13 @@ import java.util.List;
 
 
 public class ucServer {
+    static final String rootFolderPath = System.getProperty("user.dir");
+    static final String usersFolderPath = System.getProperty("user.dir") + "\\Users";
 
-    public static void main(String args[]){
+    public static void main(String args[])
+    {
         int numero=0;
+
 
         //Lê Config
 
@@ -17,6 +21,9 @@ public class ucServer {
             int serverPort = 7000;
             System.out.println("A Escuta no Porto 7000");
             ServerSocket listenSocket = new ServerSocket(serverPort);
+
+            System.out.println("Root Folder Directory = " + rootFolderPath);
+            System.out.println("Users Folder Directory = " + usersFolderPath);
 
             System.out.println("LISTEN SOCKET= "+ listenSocket);
             while(true) {
@@ -30,7 +37,8 @@ public class ucServer {
     }
 }
 
-class Connection extends Thread {
+class Connection extends Thread
+{
     DataInputStream in;
     DataOutputStream out;
     ObjectInputStream ino;
@@ -38,9 +46,12 @@ class Connection extends Thread {
     Socket clientSocket;
     int thread_number;
 
-    public Connection (Socket aClientSocket, int numero) {
+    public Connection (Socket aClientSocket, int numero)
+    {
         thread_number = numero;
-        try{
+
+        try
+        {
             clientSocket = aClientSocket;
             in = new DataInputStream(clientSocket.getInputStream());
             out = new DataOutputStream(clientSocket.getOutputStream());
@@ -51,41 +62,47 @@ class Connection extends Thread {
         }catch(IOException e){System.out.println("Connection:" + e.getMessage());}
     }
     //=============================
-    public void run(){
+    public void run()
+    {
 
-        login();
+         login();
 
     }
 
-    public void login(){
+    public void login()
+    {
         List<User> users = new ArrayList<>();
-        try {
-            File config = new File("D:\\JamHUB\\UCDrive\\src\\Users");
+        try
+        {
 
-            BufferedReader br= new BufferedReader(new FileReader(config));
-            String st, username = null, home = null, pass = null;
+            System.out.println(ucServer.rootFolderPath);
+
+            File config = new File(ucServer.rootFolderPath + "\\UsersConfig");
+
+            BufferedReader br = new BufferedReader(new FileReader(config));
+            String usersConfigRead, username = null, userDirectory = null, pass = null;
 
 
-            while ((st = br.readLine()) != null) {
+            while ((usersConfigRead = br.readLine()) != null)
+            {
                 User temp = null;
-                if (st.contains("username:")) {
-                    username = st.substring(10);
-
-
-                } else if (st.contains("password:")) {
-                    pass = st.substring(10);
+                if (usersConfigRead.contains("username:"))
+                {
+                    username = usersConfigRead.substring(10);
+                }
+                else if (usersConfigRead.contains("password:"))
+                {
+                    pass = usersConfigRead.substring(10);
                     temp = new User(username,pass);
                     users.add(temp);
-                }/*else if(st.contains("home:")){
+                }/*else if(st.contains("userDirectory:")){
                     home = st.substring(5, st.length() - 1);
                 }*/
             }
 
-            System.out.println(users);
+            // FALTA APAGAR
+            System.out.println("Lista de Users lida: " + users);
 
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -93,20 +110,46 @@ class Connection extends Thread {
 
         boolean login = true;
         try{
-            while(login){
+            while(login)
+            {
                 //Login
 
                 User user = (User) ino.readObject();
-                System.out.println("Received");
-                System.out.println(user.toString());
-                if(){
-                    out.writeBoolean(false);
+
+                // FALTA APAGAR
+
+                System.out.println("Cliente[" + thread_number + "] -> Received");
+                System.out.println("Cliente[" + thread_number + "] -> " + user.toString());
+
+                User foundUser = null;
+
+                // Percorre todos os users à procura do pedido
+                for(User u :users)
+                {
+                    if (u.getUsername().equals(user.getUsername()) && u.getPassword().equals(user.getPassword()))
+                    {
+                        // True -> Login com sucesso
+                        foundUser = u;
+                        break;
+                    }
+                }
+
+                if (foundUser != null)
+                {
+                    // True -> Login com sucesso
+                    out.writeBoolean(true);
+                    out.writeUTF(foundUser.getDirectory());
+                    out.writeUTF(foundUser.getDirectory());
+                    out.writeUTF(foundUser.getDirectory());
+                    out.writeUTF(foundUser.getDirectory());
                     System.out.println("Enviei confirmação");
                     menu(user);
-                }else{
-                    out.writeBoolean(true);
+                }
+                else
+                {
+                    // False -> Falha no login
+                    out.writeBoolean(false);
                     System.out.println("Enviei falha");
-
                 }
             }
 
@@ -118,7 +161,8 @@ class Connection extends Thread {
 
     }
 
-    public void menu(User user){
+    public void menu(User user)
+    {
         //Listar dir
         //Mudar dir
         //Descarregar dir

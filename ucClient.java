@@ -3,17 +3,13 @@ import java.io.*;
 
 public class ucClient {
     public static void main(String args[]) {
-	// args[0] <- hostname of destination
-	if (args.length == 0) {
-	    System.out.println("java TCPClient hostname");
-	    System.exit(0);
-	}
 
 	Socket s = null;
 	int serversocket = 7000;
+
 	try {
 	    // 1o passo
-	    s = new Socket(args[0], serversocket);
+	    s = new Socket("localhost", serversocket);
 
 	    System.out.println("SOCKET= " + s);
 
@@ -27,9 +23,11 @@ public class ucClient {
 	    BufferedReader reader = new BufferedReader(input);
 
 		String name = "", pass = "";
-		boolean login = true;
+		boolean login = false;
 
-		while(login) {
+		// Repete login até dar um combo certo
+		while(!login)
+		{
 			System.out.println("Introduza username: ");
 			name = reader.readLine();
 
@@ -39,11 +37,17 @@ public class ucClient {
 			User novo = new User(name, pass);
 
 			outo.writeObject(novo);
-
-			System.out.println(in.readUTF());
 			login = in.readBoolean();
-		}
 
+			System.out.println("[CLIENT SIDE] LOGIN COM SUCESSO!");
+
+			String diretoriaAtual = in.readUTF();
+			System.out.println(diretoriaAtual);
+
+
+			// FALTA APAGAR
+			System.out.println(in.readUTF());
+		}
 
 		System.out.println("Wanna Die");
 
