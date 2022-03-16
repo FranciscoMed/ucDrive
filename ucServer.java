@@ -39,37 +39,40 @@ public class ucServer {
 
 class Connection extends Thread
 {
-    DataInputStream in;
     DataOutputStream out;
-    ObjectInputStream ino;
+    DataInputStream in;
     ObjectOutputStream outo;
+    ObjectInputStream ino;
+
     Socket clientSocket;
     int thread_number;
 
-    public Connection (Socket aClientSocket, int numero)
+    public Connection(Socket aClientSocket, int numero)
     {
         thread_number = numero;
 
         try
         {
             clientSocket = aClientSocket;
-            in = new DataInputStream(clientSocket.getInputStream());
-            out = new DataOutputStream(clientSocket.getOutputStream());
-            ino = new ObjectInputStream(clientSocket.getInputStream());
+
             outo = new ObjectOutputStream(clientSocket.getOutputStream());
+            ino = new ObjectInputStream(clientSocket.getInputStream());
+
+            out = new DataOutputStream(clientSocket.getOutputStream());
+            in = new DataInputStream(clientSocket.getInputStream());
 
             this.start();
         }catch(IOException e){System.out.println("Connection:" + e.getMessage());}
     }
     //=============================
-    public void run()
+    public synchronized void run()
     {
 
          login();
 
     }
 
-    public void login()
+    public synchronized void login()
     {
         List<User> users = new ArrayList<>();
         try
@@ -118,8 +121,8 @@ class Connection extends Thread
 
                 // FALTA APAGAR
 
-                System.out.println("Cliente[" + thread_number + "] -> Received");
-                System.out.println("Cliente[" + thread_number + "] -> " + user.toString());
+                System.out.println("Cliente[" + thread_number + "] - Received");
+                System.out.println("Cliente[" + thread_number + "] - " + user.toString());
 
                 User foundUser = null;
 
@@ -137,18 +140,16 @@ class Connection extends Thread
                 if (foundUser != null)
                 {
                     // True -> Login com sucesso
-                    out.writeBoolean(true);
-                    out.writeUTF(foundUser.getDirectory());
-                    out.writeUTF(foundUser.getDirectory());
-                    out.writeUTF(foundUser.getDirectory());
-                    out.writeUTF(foundUser.getDirectory());
+                    outo.writeObject(new RespostaLogin(true, foundUser.getDirectory()));
                     System.out.println("Enviei confirmação");
+                    login = false;
                     menu(user);
+
                 }
                 else
                 {
                     // False -> Falha no login
-                    out.writeBoolean(false);
+                    outo.writeObject(new RespostaLogin(false, null));
                     System.out.println("Enviei falha");
                 }
             }
@@ -161,13 +162,22 @@ class Connection extends Thread
 
     }
 
-    public void menu(User user)
-    {
+    public synchronized void menu(User user) throws IOException {
         //Listar dir
         //Mudar dir
         //Descarregar dir
-        System.out.println("Login com sucesso");
+        System.out.println("ENTREI NO MENU");
 
+
+        // FALTA - Mudar para cliente ou servidor ?
+        String menu = "[0] Listar Dir  | [1] Mudar Dir | [2] Descarregar ficheiro | [3] Carregar ficheiro | [4] Mudar Endereços";
+
+        try
+        {
+            System.out.println("[Server Side] - " + menu);
+            out.writeUTF(menu);
+        }
+        catch(IOException e){System.out.println("IO:" + e);}
 
     }
 }
