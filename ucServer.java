@@ -341,10 +341,10 @@ class Connection extends Thread
                 }
             }
 
-            System.out.println(users);
-
             System.out.println("ATUALIZAMOS A PW");
 
+            String texto = "PW do cliente " + userAtual.getUsername() + " modificada. Terá de fazer login de novo!";
+            outo.writeObject(new RespostaServidor("PWaccept", texto));
 
             // ISTO AQUI ESTÁ CORRETO ???? - FALTA
             login();

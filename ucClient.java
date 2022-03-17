@@ -26,6 +26,9 @@ public class ucClient
 			InputStreamReader input = new InputStreamReader(System.in);
 			BufferedReader reader = new BufferedReader(input);
 
+
+			// FALTA PASSAR ISTO PARA UMA FUNÇÃO
+
 			// Repete login até dar um combo certo
 			while(true)
 			{
@@ -57,65 +60,85 @@ public class ucClient
 				}
 			}
 
-			// Imprime menu com Possiveis comandos
-			String menu = "[CLIENT SIDE] - O que deseja fazer ? [Digite o numero apenas!]\n[0] Alterar PW  \n[1] Alterar endereços \n[2] Listar Dir Servidor \n[3] Mudar Dir Servidor \n[4] Listar Dir Cliente\n[5] Mudar Dir Cliente \n[6] Descarregar ficheiro \n[7] Carregar ficheiro \n[8] Exit";
-			System.out.println(menu);
-			System.out.print("-- ");
-
-			// Recebe a escolha do cliente e envia para o server
-			String escolha = reader.readLine();
-			// System.out.println("[Client Side] > " + escolha);
-			out.writeUTF(escolha);
-
-
-			RespostaServidor respostaServidor = (RespostaServidor) ino.readObject();
-
-			// Se a mensagem não tiver umas da opções teremos de introduzir novo comando.
-			while (respostaServidor.getMensagemCompleta().contains("Valor errado"))
+			while(true)
 			{
-				System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+
+				// Imprime menu com Possiveis comandos
+				String menu = "[CLIENT SIDE] - O que deseja fazer ? [Digite o numero apenas!]\n[0] Alterar PW  \n[1] Alterar endereços \n[2] Listar Dir Servidor \n[3] Mudar Dir Servidor \n[4] Listar Dir Cliente\n[5] Mudar Dir Cliente \n[6] Descarregar ficheiro \n[7] Carregar ficheiro \n[8] Exit";
+				System.out.println(menu);
 				System.out.print("-- ");
 
 				// Recebe a escolha do cliente e envia para o server
-				escolha = reader.readLine();
+				String escolha = reader.readLine();
 				// System.out.println("[Client Side] > " + escolha);
 				out.writeUTF(escolha);
 
-				respostaServidor = (RespostaServidor) ino.readObject();
-			}
 
-			// Trabalha os comandos - MENU !!
-			switch (respostaServidor.getResposta())
-			{
-				default:
-					System.out.println("DEFAULT - FALTA TRATAR ISTO - Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
-					return;
+				RespostaServidor respostaServidor = (RespostaServidor) ino.readObject();
 
-				case "PW":
-					System.out.println("LOGOUT");
-
-					break;
-
-				case "LOGOUT":
-					System.out.println("LOGOUT");
-
-					break;
-				case "EXIT":
+				// Se a mensagem não tiver umas da opções teremos de introduzir novo comando.
+				while (respostaServidor.getMensagemCompleta().contains("Valor errado"))
+				{
 					System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
-					return;
+					System.out.print("-- ");
+
+					// Recebe a escolha do cliente e envia para o server
+					escolha = reader.readLine();
+					// System.out.println("[Client Side] > " + escolha);
+					out.writeUTF(escolha);
+
+					respostaServidor = (RespostaServidor) ino.readObject();
+				}
+
+				// Trabalha os comandos - MENU !!
+				switch (respostaServidor.getResposta())
+				{
+					default:
+						System.out.println("DEFAULT - FALTA TRATAR ISTO - Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+						return;
+
+					case "PW":
+						System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+						System.out.print("-- ");
+						String newPW = reader.readLine();
+						System.out.println("[Client Side] > " + newPW);
+						out.writeUTF(newPW);
+
+						respostaServidor = (RespostaServidor) ino.readObject();
+
+						if (respostaServidor.getResposta().contains("PWaccept"))
+						{
+							System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+
+							// FALTA -- CHAMAR AQUI UMA FUNÇÃO LOGIN
+							// clientLogin()
+
+							System.out.println("FALTA CHAMAR FUNÇÃO LOGIN");
+
+						}
+						else
+						{
+							// FALTA - O QUE SE FAZ AQUI ? É SEQUER PRECISO ???
+							new Exception("Don't know this answer from server");
+						}
+
+
+						break;
+
+					case "LOGOUT":
+						System.out.println("LOGOUT");
+
+						break;
+					case "EXIT":
+						System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+						return;
+				}
+
+				System.out.println("TESTE -> QUEREMOS NOVO COMANDO!");
 			}
 
-			System.out.print("-- ");
-			String newPW = reader.readLine();
-			System.out.println("[Client Side] > " + newPW);
-			out.writeUTF(newPW);
 
 
-			in.readUTF();
-
-
-			// FIM DO CLIENTE
-			System.out.println("Wanna Die");
 
 		} catch (UnknownHostException e) {
 			System.out.println("Socket:" + e.getMessage());
