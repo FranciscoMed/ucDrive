@@ -45,6 +45,8 @@ class Connection extends Thread
     Socket clientSocket;
     int thread_number;
 
+    String configPath = ucServer.rootFolderPath + "\\UsersConfig";
+
     public Connection(Socket aClientSocket, int numero)
     {
         thread_number = numero;
@@ -62,17 +64,15 @@ class Connection extends Thread
             this.start();
         }catch(IOException e){System.out.println("Connection:" + e.getMessage());}
     }
+
     //=============================
     public synchronized void run()
     {
 
-        System.out.println(ucServer.rootFolderPath);
-        String configPath = ucServer.rootFolderPath + "\\UsersConfig";
+        System.out.println("Root Folder Path > " + ucServer.rootFolderPath);
 
         // Se quisermos adicionar USERS manualmente usando o Ficheiro de texto
         /*
-
-
 
         String configPathManual = ucServer.rootFolderPath + "\\UsersConfigManual";
 
@@ -104,7 +104,7 @@ class Connection extends Thread
                 }
             }
 
-            WriteUserToFile((List<User>) users, configPath);
+            WriteUsersToFile((List<User>) users, configPath);
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -116,7 +116,7 @@ class Connection extends Thread
     }
 
     // Faz a escrita da lista de Users do Ficheiro de Objetos
-    public synchronized void WriteUserToFile(List<User> listUsers, String filePath)
+    public synchronized void WriteUsersToFile(List<User> listUsers, String filePath)
     {
         System.out.println("Writing all Users to File!");
 
@@ -206,6 +206,8 @@ class Connection extends Thread
                     outo.writeObject(new RespostaLogin(true, foundUser.getDirectory()));
                     System.out.println("[Server Side] - Enviei confirmação");
                     login = false;
+
+
                     menu(user);
 
                 }
@@ -221,27 +223,136 @@ class Connection extends Thread
         catch(EOFException e){System.out.println("EOF:" + e);}
         catch(IOException e){System.out.println("IO:" + e);}
         catch (ClassNotFoundException e) {e.printStackTrace();}
+        catch (Exception e) {
+            e.printStackTrace();
+        }
 
 
     }
 
-    public synchronized void menu(User user) throws IOException
+    public synchronized void menu(User user) throws Exception
     {
         //Listar dir
         //Mudar dir
         //Descarregar dir
-        System.out.println("ENTREI NO MENU");
+        System.out.println("[Server Side] - Waiting for commands from " + user.getUsername());
 
-        // FALTA - Mudar para cliente ou servidor ?
-        String menu = "[0] Listar Dir  | [1] Mudar Dir | [2] Descarregar ficheiro | [3] Carregar ficheiro | [4] Mudar Endereços";
+        // LOOP para ler o comando do cliente
+        while (true)
+        {
+            // Apenas lê quando houver algo a ler
+            if (in.available() > 0)
+            {
+                String escolhaCliente = in.readUTF();
+
+                // Verifica que a escolha está dentro dos comandos possíveis
+                while (Integer.parseInt(escolhaCliente) < 0 || Integer.parseInt(escolhaCliente) > 8)
+                {
+                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: Valor Errado (" + escolhaCliente +") - Tente novamente!");
+
+                    String texto = "Valor errado - Introduza novo valor dentro dos possiveis!";
+                    RespostaServidor respostaServidor = new RespostaServidor("WrongValue", texto);
+                    outo.writeObject(respostaServidor);
+
+                    escolhaCliente = in.readUTF();
+                }
+
+
+                switch (escolhaCliente)
+                {
+                    case "0":
+                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [0] > Alterar PW");
+
+                        changePassword(user);
+
+                        break;
+                    case "1":
+                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [1] > Alterar endereços");
+
+                        break;
+                    case "2":
+                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [2] > Listar Dir Servidor");
+
+                        break;
+                    case "3":
+                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [3] > Mudar Dir Servidor");
+
+                        break;
+                    case "4":
+                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [4] > Listar Dir Cliente");
+
+                        break;
+                    case "5":
+                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [5] > Mudar Dir Cliente");
+
+                        break;
+                    case "6":
+                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [6] > Descarregar ficheiro");
+
+                        break;
+                    case "7":
+                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [7] > Carregar ficheiro");
+
+                        break;
+                    case "8":
+                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [8] > Exit");
+                        outo.writeObject(new RespostaServidor("EXIT", "O servidor fecha a ligação mediante pedido!"));
+                        clientSocket.close();
+                        break;
+                }
+
+
+                break;
+            }
+        }
+
+        System.out.println("FINISHED SERVER");
+
+
+    }
+
+    private synchronized void changePassword(User userAtual) throws Exception
+    {
 
         try
         {
-            System.out.println("[Server Side] - " + menu);
+            System.out.println("Client [" + userAtual.getUsername()+"] quer trocar de Password.");
+            RespostaServidor respostaServidor = new RespostaServidor("PW", "Introduza nova PW ?");
 
-            out.writeUTF(menu);
+            outo.writeObject(respostaServidor);
+
+            String newPw = in.readUTF();
+            System.out.println("PW nova do client [" + userAtual.getUsername()+"]: " + newPw);
+
+            userAtual.setPassword(newPw);
+
+            // Vai à lista de Users e altera a PW, escrevendo de novo no ficheiro objeto a nova Password
+            List<User> users = ReadUsersFromFile(configPath);
+            User foundUser = null;
+            // Percorre os users até encontrar
+            for(User u : users)
+            {
+                // Encontrou o USER
+                if (u.getUsername().equals(userAtual.getUsername()))
+                {
+                    u.setPassword(newPw);
+                    WriteUsersToFile(users, configPath);
+                    break;
+                }
+            }
+
+            System.out.println(users);
+
+            System.out.println("ATUALIZAMOS A PW");
+
+
+            // ISTO AQUI ESTÁ CORRETO ???? - FALTA
+            login();
         }
-        catch(IOException e){System.out.println("IO:" + e);}
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+
 
     }
 }
