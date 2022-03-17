@@ -15,8 +15,6 @@ public class ucServer {
 
 
         //Lê Config
-
-
         try{
             int serverPort = 7000;
             System.out.println("A Escuta no Porto 7000");
@@ -68,24 +66,23 @@ class Connection extends Thread
     public synchronized void run()
     {
 
-         login();
+        System.out.println(ucServer.rootFolderPath);
+        String configPath = ucServer.rootFolderPath + "\\UsersConfig";
 
-    }
+        // Se quisermos adicionar USERS manualmente usando o Ficheiro de texto
+        /*
 
-    public synchronized void login()
-    {
-        List<User> users = new ArrayList<>();
+
+
+        String configPathManual = ucServer.rootFolderPath + "\\UsersConfigManual";
+
         try
         {
-
-            System.out.println(ucServer.rootFolderPath);
-
-            File config = new File(ucServer.rootFolderPath + "\\UsersConfig");
-
+            File config = new File(configPathManual);
             BufferedReader br = new BufferedReader(new FileReader(config));
             String usersConfigRead, username = null, userDirectory = null, pass = null;
 
-
+            /*
             while ((usersConfigRead = br.readLine()) != null)
             {
 
@@ -102,32 +99,93 @@ class Connection extends Thread
                     userDirectory = usersConfigRead.substring(11);
 
                     // Directory será o ultimo campo de um user por isso, cria-se aqui.
-                    users.add(new User(username,pass, userDirectory));
+                    User tmp = new User(username,pass, userDirectory);
+                    users.add(tmp);
                 }
             }
 
+            WriteUserToFile((List<User>) users, configPath);
 
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        */
 
-            // FALTA APAGAR
-            System.out.println("Lista de Users lida: " + users);
+        login();
 
-        } catch (IOException e) {
+    }
+
+    // Faz a escrita da lista de Users do Ficheiro de Objetos
+    public synchronized void WriteUserToFile(List<User> listUsers, String filePath)
+    {
+        System.out.println("Writing all Users to File!");
+
+        try
+        {
+            FileOutputStream fileOut = new FileOutputStream(filePath);
+            ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
+            objectOut.writeObject(listUsers);
+
+            objectOut.close();
+
+            System.out.println("User foi escrito para o ficheiro!");
+
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
 
+    }
+
+
+    // Faz a leitura da lista de Users do Ficheiro de Objetos
+    public synchronized List<User> ReadUsersFromFile(String filePath)
+    {
+        System.out.println("Reading Users from File Config!");
+
+        List<User> listUsersRead = null;
+
+        try
+        {
+            FileInputStream fileIn = new FileInputStream(filePath);
+            ObjectInputStream objectIn = new ObjectInputStream(fileIn);
+            listUsersRead = (List<User>) objectIn.readObject();
+            objectIn.close();
+
+            for (User u:listUsersRead)
+            {
+                System.out.println("Read User: " + u.getUsername());
+            }
+
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return listUsersRead;
+    }
+
+
+    public synchronized void login()
+    {
+        List<User> users = new ArrayList<>();
+        System.out.println(ucServer.rootFolderPath);
+        String configPath = ucServer.rootFolderPath + "\\UsersConfig";
+
+        users = ReadUsersFromFile(configPath);
 
         boolean login = true;
-        try{
+
+        // LOGIN
+        try
+        {
+            // Continua a fazer até conseguir fazer login
             while(login)
             {
-                //Login
-
                 User user = (User) ino.readObject();
 
-                // FALTA APAGAR
-
-                System.out.println("Cliente[" + thread_number + "] - Received");
-                System.out.println("Cliente[" + thread_number + "] - " + user.toString());
+                // Leitura dos clientes a fazer login
+                System.out.println("Received from client[" + thread_number + "] - Username: " + user.getUsername());
 
                 User foundUser = null;
 
@@ -146,7 +204,7 @@ class Connection extends Thread
                 {
                     // True -> Login com sucesso
                     outo.writeObject(new RespostaLogin(true, foundUser.getDirectory()));
-                    System.out.println("Enviei confirmação");
+                    System.out.println("[Server Side] - Enviei confirmação");
                     login = false;
                     menu(user);
 
@@ -155,24 +213,24 @@ class Connection extends Thread
                 {
                     // False -> Falha no login
                     outo.writeObject(new RespostaLogin(false, null));
-                    System.out.println("Enviei falha");
+                    System.out.println("[Server Side] - Enviei falha");
                 }
             }
 
-        }catch(EOFException e){System.out.println("EOF:" + e);
-        }catch(IOException e){System.out.println("IO:" + e);} catch (ClassNotFoundException e) {
-            e.printStackTrace();
         }
+        catch(EOFException e){System.out.println("EOF:" + e);}
+        catch(IOException e){System.out.println("IO:" + e);}
+        catch (ClassNotFoundException e) {e.printStackTrace();}
 
 
     }
 
-    public synchronized void menu(User user) throws IOException {
+    public synchronized void menu(User user) throws IOException
+    {
         //Listar dir
         //Mudar dir
         //Descarregar dir
         System.out.println("ENTREI NO MENU");
-
 
         // FALTA - Mudar para cliente ou servidor ?
         String menu = "[0] Listar Dir  | [1] Mudar Dir | [2] Descarregar ficheiro | [3] Carregar ficheiro | [4] Mudar Endereços";
@@ -180,6 +238,7 @@ class Connection extends Thread
         try
         {
             System.out.println("[Server Side] - " + menu);
+
             out.writeUTF(menu);
         }
         catch(IOException e){System.out.println("IO:" + e);}
