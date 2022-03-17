@@ -12,7 +12,7 @@ public class RespostaLogin implements Serializable {
 
     @Override
     public String toString() {
-        return "respostaTESTE{" +
+        return "RespostaLogin{" +
                 "resposta=" + resposta +
                 ", directoryAtual='" + directoryAtual + '\'' +
                 '}';
