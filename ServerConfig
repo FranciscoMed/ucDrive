@@ -1,0 +1,3 @@
+heartbeat: 50
+failbeat: 5
+port: 7000
