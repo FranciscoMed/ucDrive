@@ -1,36 +1,32 @@
-import jdk.swing.interop.SwingInterOpUtils;
-
 import java.net.*;
 import java.io.*;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class ucClient
 {
 
+	String localDirectory = System.getProperty("user.dir") + "\\Home";
 
 	public static void main(String args[])
 	{
 
 		Socket s = null;
 		int serversocket = 7000;
-		String localDirectory = System.getProperty("user.dir") + "\\Home";
+
 
 		try
 		{
-			// 1o passo
+
 			s = new Socket("localhost", serversocket);
+
+			ucClient localClient = new ucClient();
 
 			System.out.println("SOCKET= " + s);
 
 			StreamsClass clientStreams = new StreamsClass(s);
 
 			ObjectInputStream ino = clientStreams.getIno();
-			ObjectOutputStream outo = clientStreams.getOuto();
 			DataOutputStream out = clientStreams.getOut();
-			DataInputStream in = clientStreams.getIn();
-			InputStreamReader input = clientStreams.getInput();
 			BufferedReader reader = clientStreams.getReader();
 
 			// Faz o login do cliente
@@ -47,18 +43,20 @@ public class ucClient
 				String escolha = reader.readLine();
 				// System.out.println("[Client Side] > " + escolha);
 
-				if (escolha.equals("6"))
+				if (escolha.equals("4"))
 				{
 					System.out.println("[Client Side] - Operação a ser executada no cliente");
 
-					File tmp = new File(localDirectory);
+					File tmp = new File(localClient.localDirectory);
 
 					System.out.print("[Cliente Side] - ");
-					printDirectoryClient(Objects.requireNonNull(tmp.list()), localDirectory);
+					printDirectoryClient(Objects.requireNonNull(tmp.list()), localClient.localDirectory);
 				}
-				else if (escolha.equals("7"))
+				else if (escolha.equals("5"))
 				{
-					System.out.println("[Client Side] - Operação a ser executada no cliente - Mudar Directoria do Cliente");
+					System.out.println("[Client Side] - Operação a ser executada no cliente");
+					System.out.print("[Cliente Side] - ");
+					changeDirectoryClient(localClient, clientStreams);
 
 				}
 				else
@@ -138,9 +136,6 @@ public class ucClient
 		catch (IOException e) {
 			System.out.println("IO:" + e.getMessage());
 		}
-		catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		}
 		catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -168,6 +163,61 @@ public class ucClient
 
 	}
 
+	// Faz o print da lista que recebemos como árvore de diretorias
+	private static void changeDirectoryClient(ucClient thisClient, StreamsClass clientStreams) throws Exception
+	{
+		BufferedReader reader = clientStreams.getReader();
+
+		// Verificamos quais os possíveis destinos
+		String[] listaDiretoria = new File(thisClient.localDirectory).list();
+
+		String[] split = thisClient.localDirectory.split("\\\\");
+		System.out.println(" Mudar Directoria do Cliente > Atualmente estamos na " + split[split.length - 1]);
+		System.out.println("Introduza a nova diretoria ou [Back] para voltar atrás!");
+
+		boolean changedDirectory = false;
+		while (!changedDirectory)
+		{
+			String newDirectory = reader.readLine();
+
+			if (newDirectory.equals("Back") && !split[split.length - 1].equals("ucDrive"))
+			{
+				split = thisClient.localDirectory.split("\\\\");
+				newDirectory = split[0];
+
+				for (int i = 1; i < split.length - 1; i++)
+				{
+					newDirectory = newDirectory + "\\" + split[i];
+				}
+				changedDirectory = true;
+				thisClient.localDirectory = newDirectory;
+			}
+			else if (!newDirectory.equals("Back"))
+			{
+				// Percorre a lista de possíveis destinos
+				for (String d : listaDiretoria)
+				{
+					if (newDirectory.equals(d))
+					{
+						thisClient.localDirectory = thisClient.localDirectory + "\\" + newDirectory;
+						changedDirectory = true;
+						break;
+					}
+				}
+			}
+
+			if (changedDirectory)
+			{
+				System.out.println("[Client Side] - A diretoria do cliente mudou para: " + thisClient.localDirectory);
+			}
+			else
+			{
+				System.out.println("Esse destino " + newDirectory + " não existe! Tente um novo dentro dos possíveis.");
+				printDirectoryClient(listaDiretoria, split[split.length - 1]);
+			}
+
+		}
+	}
 
 	private static void clientLogin(StreamsClass clientStreams) throws Exception
 	{

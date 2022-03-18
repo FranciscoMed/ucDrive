@@ -69,7 +69,6 @@ public class ucServer {
         //Lê Config
         try
         {
-
             int serverPort = port;
             System.out.println("A Escuta no Porto " + serverPort);
             ServerSocket listenSocket = new ServerSocket(serverPort);
@@ -365,13 +364,14 @@ class Connection extends Thread
                     System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [3] > Mudar Dir Servidor");
 
                     break;
-                case "4":
-                    // Listar Dir Cliente
-                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [4] > Listar Dir Cliente");
+                case "6":
+                    // Descarregar ficheiro
+                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [6] > Descarregar ficheiro");
 
                     break;
-                case "5":
-                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [5] > Mudar Dir Cliente");
+                case "7":
+                    // Carregar ficheiro
+                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [7] > Carregar ficheiro");
 
                     break;
                 case "8":
