@@ -9,9 +9,20 @@ public class ucServer {
     static final String rootFolderPath = System.getProperty("user.dir");
     static final String usersFolderPath = System.getProperty("user.dir") + "\\Users";
 
+    List<String> usersConnected;
+    int ServerPort;
+
+    public ucServer(int serverPort)
+    {
+        this.usersConnected = new ArrayList<>();
+        this.ServerPort = serverPort;
+    }
+
     public static void main(String args[])
     {
-        int numero=0;
+        int numero = 0;
+
+        ucServer servidorPrimario = new ucServer(7000);
 
 
         //Lê Config
@@ -24,11 +35,12 @@ public class ucServer {
             System.out.println("Users Folder Directory = " + usersFolderPath);
 
             System.out.println("LISTEN SOCKET= "+ listenSocket);
-            while(true) {
+            while(true)
+            {
                 Socket clientSocket = listenSocket.accept(); // BLOQUEANTE
                 System.out.println("CLIENT_SOCKET (created at accept())= " + clientSocket);
                 numero ++;
-                new Connection(clientSocket, numero);
+                new Connection(clientSocket, numero, servidorPrimario);
             }
         }catch(IOException e)
         {System.out.println("Listen: " + e.getMessage());}
@@ -45,11 +57,14 @@ class Connection extends Thread
     Socket clientSocket;
     int thread_number;
 
+    ucServer servidorLigado;
+
     String configPath = ucServer.rootFolderPath + "\\UsersConfig";
 
-    public Connection(Socket aClientSocket, int numero)
+    public Connection(Socket aClientSocket, int numero, ucServer servidorPrimario)
     {
         thread_number = numero;
+        servidorLigado = servidorPrimario;
 
         try
         {
@@ -111,7 +126,7 @@ class Connection extends Thread
         }
         */
 
-        login();
+        login(servidorLigado.usersConnected);
 
     }
 
@@ -166,7 +181,7 @@ class Connection extends Thread
     }
 
 
-    public synchronized void login()
+    public synchronized void login(List<String> usersConnected)
     {
         List<User> users = new ArrayList<>();
         System.out.println(ucServer.rootFolderPath);
@@ -182,7 +197,13 @@ class Connection extends Thread
             // Continua a fazer até conseguir fazer login
             while(login)
             {
-                User user = (User) ino.readObject();
+                outo.writeObject(new RespostaServidor("LoginUser", "Introduza username: "));
+                String usernameReceived = in.readUTF();
+
+                outo.writeObject(new RespostaServidor("LoginPW", "Introduza a password: "));
+                String passwordReceived = in.readUTF();
+
+                User user = new User(usernameReceived, passwordReceived);
 
                 // Leitura dos clientes a fazer login
                 System.out.println("Received from client[" + thread_number + "] - Username: " + user.getUsername());
@@ -202,14 +223,33 @@ class Connection extends Thread
 
                 if (foundUser != null)
                 {
-                    // True -> Login com sucesso
-                    outo.writeObject(new RespostaLogin(true, foundUser.getDirectory()));
-                    System.out.println("[Server Side] - Enviei confirmação");
-                    login = false;
 
+                    boolean userAlreadyConnected = false;
+                    // Verifica se o User não está ligado já ao servidor!
+                    for (String usernameToCompare : usersConnected)
+                    {
+                        if (usernameToCompare.equals(foundUser.getUsername()))
+                        {
+                            userAlreadyConnected = true;
+                        }
+                    }
 
-                    menu(user);
+                    if (userAlreadyConnected)
+                    {
+                        // False -> Falha no login
+                        outo.writeObject(new RespostaLogin(false, null));
+                        System.out.println("[Server Side] - User já logado - Enviei falha");
+                    }
+                    else
+                    {
+                        // True -> Login com sucesso
+                        usersConnected.add(foundUser.getUsername());
+                        outo.writeObject(new RespostaLogin(true, foundUser.getDirectory()));
+                        System.out.println("[Server Side] - Enviei confirmação");
+                        login = false;
 
+                        menu(user);
+                    }
                 }
                 else
                 {
@@ -296,6 +336,17 @@ class Connection extends Thread
                         break;
                     case "8":
                         System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [8] > Exit");
+                        // remove o user da lista de ligações
+                        for (String u2 : servidorLigado.usersConnected)
+                        {
+                            if (u2.equals(user.getUsername()))
+                            {
+                                System.out.println("[Server Side] - Removeu User(" + u2 + ") da lista de ligações.");
+                                servidorLigado.usersConnected.remove((String) u2);
+                                break;
+                            }
+                        }
+
                         outo.writeObject(new RespostaServidor("EXIT", "O servidor fecha a ligação mediante pedido!"));
                         clientSocket.close();
                         break;
@@ -313,7 +364,6 @@ class Connection extends Thread
 
     private synchronized void changePassword(User userAtual) throws Exception
     {
-
         try
         {
             System.out.println("Client [" + userAtual.getUsername()+"] quer trocar de Password.");
@@ -346,8 +396,18 @@ class Connection extends Thread
             String texto = "PW do cliente " + userAtual.getUsername() + " modificada. Terá de fazer login de novo!";
             outo.writeObject(new RespostaServidor("PWaccept", texto));
 
-            // ISTO AQUI ESTÁ CORRETO ???? - FALTA
-            login();
+            // remove o user da lista de ligações
+            for (String u2 : servidorLigado.usersConnected)
+            {
+                if (u2.equals(userAtual.getUsername()))
+                {
+                    System.out.println("[Server Side] - Removeu User(" + u2 + ") da lista de ligações.");
+                    servidorLigado.usersConnected.remove((String) u2);
+                    break;
+                }
+            }
+
+            login(servidorLigado.usersConnected);
         }
         catch (Exception e) {
             e.printStackTrace();
