@@ -4,14 +4,14 @@ import java.security.spec.RSAOtherPrimeInfo;
 
 public class ucClient
 {
-    public static void main(String args[])
+	public static void main(String args[])
 	{
 
 		Socket s = null;
 		int serversocket = 7000;
 
 		try {
-			// 1o passo
+
 			s = new Socket("localhost", serversocket);
 
 			System.out.println("SOCKET= " + s);
