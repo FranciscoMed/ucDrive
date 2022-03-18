@@ -7,23 +7,33 @@ import java.util.List;
 
 public class ucServer {
     static final String rootFolderPath = System.getProperty("user.dir");
-    static final String usersFolderPath = System.getProperty("user.dir") + "\\Users";
 
+    static String usersFolderPath;
     List<String> usersConnected;
     int ServerPort;
 
-    public ucServer(int serverPort)
+
+    public ucServer(int serverPort, boolean isPrimary)
     {
         this.usersConnected = new ArrayList<>();
         this.ServerPort = serverPort;
+        if (isPrimary) // Para saber se é o primary ou não.
+        {
+            this.usersFolderPath = System.getProperty("user.dir") + "\\Servidor 1\\Users";
+        }
+        else
+        {
+            this.usersFolderPath = System.getProperty("user.dir") + "\\Servidor 2\\Users";
+        }
+
     }
 
     public static void main(String args[])
     {
         int numero = 0;
 
-        ucServer servidorPrimario = new ucServer(7000);
-
+        // o True serve para dizer que é o Primary Server, a false seria o secundario.
+        ucServer servidorPrimario = new ucServer(7000, true);
 
         String configPathManual = ucServer.rootFolderPath + "\\ServerConfig";
         int  heartbeat , port = 7000, failbeat ;
@@ -57,7 +67,8 @@ public class ucServer {
 
 
         //Lê Config
-        try{
+        try
+        {
 
             int serverPort = port;
             System.out.println("A Escuta no Porto " + serverPort);
@@ -86,6 +97,8 @@ class Connection extends Thread
     ObjectOutputStream outo;
     ObjectInputStream ino;
 
+    String userDirectory;
+
     Socket clientSocket;
     int thread_number;
 
@@ -95,8 +108,8 @@ class Connection extends Thread
 
     public Connection(Socket aClientSocket, int numero, ucServer servidorPrimario)
     {
-        thread_number = numero;
-        servidorLigado = servidorPrimario;
+        this.thread_number = numero;
+        this.servidorLigado = servidorPrimario;
 
         try
         {
@@ -109,7 +122,8 @@ class Connection extends Thread
             in = new DataInputStream(clientSocket.getInputStream());
 
             this.start();
-        }catch(IOException e){System.out.println("Connection:" + e.getMessage());}
+        }
+        catch(IOException e){System.out.println("Connection:" + e.getMessage());}
     }
 
     //=============================
@@ -201,7 +215,7 @@ class Connection extends Thread
 
             for (User u:listUsersRead)
             {
-                System.out.println("Read User: " + u.getUsername());
+                System.out.println("Read User: " + u.getUsername() + "   > " + u.getPassword());
             }
 
         }
@@ -280,6 +294,8 @@ class Connection extends Thread
                         System.out.println("[Server Side] - Enviei confirmação");
                         login = false;
 
+                        this.userDirectory = foundUser.getDirectory();
+
                         menu(user);
                     }
                 }
@@ -294,12 +310,7 @@ class Connection extends Thread
         }
         catch(EOFException e){System.out.println("EOF:" + e);}
         catch(IOException e){System.out.println("IO:" + e);}
-        catch (ClassNotFoundException e) {e.printStackTrace();}
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
+        catch (Exception e) {e.printStackTrace();}
     }
 
     public synchronized void menu(User user) throws Exception
@@ -307,91 +318,80 @@ class Connection extends Thread
         //Listar dir
         //Mudar dir
         //Descarregar dir
-        System.out.println("[Server Side] - Waiting for commands from " + user.getUsername());
+
 
         // LOOP para ler o comando do cliente
         while (true)
         {
+            System.out.println("[Server Side] - Waiting for commands from " + user.getUsername());
+
             // Apenas lê quando houver algo a ler
-            if (in.available() > 0)
+            String escolhaCliente = in.readUTF();
+
+            // Verifica que a escolha está dentro dos comandos possíveis
+            while (Integer.parseInt(escolhaCliente) < 0 || Integer.parseInt(escolhaCliente) > 8)
             {
-                String escolhaCliente = in.readUTF();
+                System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: Valor Errado (" + escolhaCliente +") - Tente novamente!");
 
-                // Verifica que a escolha está dentro dos comandos possíveis
-                while (Integer.parseInt(escolhaCliente) < 0 || Integer.parseInt(escolhaCliente) > 8)
-                {
-                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: Valor Errado (" + escolhaCliente +") - Tente novamente!");
+                String texto = "Valor errado - Introduza novo valor dentro dos possiveis!";
+                RespostaServidor respostaServidor = new RespostaServidor("WrongValue", texto);
+                outo.writeObject(respostaServidor);
 
-                    String texto = "Valor errado - Introduza novo valor dentro dos possiveis!";
-                    RespostaServidor respostaServidor = new RespostaServidor("WrongValue", texto);
-                    outo.writeObject(respostaServidor);
-
-                    escolhaCliente = in.readUTF();
-                }
+                escolhaCliente = in.readUTF();
+            }
 
 
-                switch (escolhaCliente)
-                {
-                    case "0":
-                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [0] > Alterar PW");
+            switch (escolhaCliente)
+            {
+                case "0":
+                    // Alterar PW
+                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [0] > Alterar PW");
+                    changePassword(user);
+                    break;
 
-                        changePassword(user);
+                case "1":
+                    // Alterar endereços
+                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [1] > Alterar endereços");
+                    break;
 
-                        break;
-                    case "1":
-                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [1] > Alterar endereços");
+                case "2":
+                    // Listar Dir Servidor
+                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [2] > Listar Dir Servidor");
+                    outo.writeObject(new RespostaServidor("ServerDir", "A diretoria do user " + user.getUsername() + " atual do servidor é: " + this.userDirectory));
+                    outo.writeObject(new RespostaDiretorias("ServerDir", this.userDirectory));
+                    break;
 
-                        break;
-                    case "2":
-                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [2] > Listar Dir Servidor");
+                case "3":
+                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [3] > Mudar Dir Servidor");
 
-                        break;
-                    case "3":
-                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [3] > Mudar Dir Servidor");
+                    break;
+                case "4":
+                    // Listar Dir Cliente
+                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [4] > Listar Dir Cliente");
 
-                        break;
-                    case "4":
-                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [4] > Listar Dir Cliente");
+                    break;
+                case "5":
+                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [5] > Mudar Dir Cliente");
 
-                        break;
-                    case "5":
-                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [5] > Mudar Dir Cliente");
-
-                        break;
-                    case "6":
-                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [6] > Descarregar ficheiro");
-
-                        break;
-                    case "7":
-                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [7] > Carregar ficheiro");
-
-                        break;
-                    case "8":
-                        System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [8] > Exit");
-                        // remove o user da lista de ligações
-                        for (String u2 : servidorLigado.usersConnected)
+                    break;
+                case "8":
+                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [8] > Exit");
+                    // remove o user da lista de ligações
+                    for (String u2 : servidorLigado.usersConnected)
+                    {
+                        if (u2.equals(user.getUsername()))
                         {
-                            if (u2.equals(user.getUsername()))
-                            {
-                                System.out.println("[Server Side] - Removeu User(" + u2 + ") da lista de ligações.");
-                                servidorLigado.usersConnected.remove((String) u2);
-                                break;
-                            }
+                            System.out.println("[Server Side] - Removeu User(" + u2 + ") da lista de ligações.");
+                            servidorLigado.usersConnected.remove((String) u2);
+                            break;
                         }
+                    }
 
-                        outo.writeObject(new RespostaServidor("EXIT", "O servidor fecha a ligação mediante pedido!"));
-                        clientSocket.close();
-                        break;
-                }
-
-
-                break;
+                    outo.writeObject(new RespostaServidor("EXIT", "O servidor fecha a ligação mediante pedido!"));
+                    clientSocket.close();
+                    return;
             }
         }
-
-        System.out.println("FINISHED SERVER");
-
-
     }
 
     private synchronized void changePassword(User userAtual) throws Exception

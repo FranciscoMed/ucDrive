@@ -2,18 +2,23 @@ import jdk.swing.interop.SwingInterOpUtils;
 
 import java.net.*;
 import java.io.*;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class ucClient
 {
+
 
 	public static void main(String args[])
 	{
 
 		Socket s = null;
 		int serversocket = 7000;
+		String localDirectory = System.getProperty("user.dir") + "\\Home";
 
-		try {
+		try
+		{
 			// 1o passo
 			s = new Socket("localhost", serversocket);
 
@@ -31,7 +36,6 @@ public class ucClient
 			// Faz o login do cliente
 			clientLogin(clientStreams);
 
-
 			while(true)
 			{
 				// Imprime menu com Possiveis comandos
@@ -42,69 +46,105 @@ public class ucClient
 				// Recebe a escolha do cliente e envia para o server
 				String escolha = reader.readLine();
 				// System.out.println("[Client Side] > " + escolha);
-				out.writeUTF(escolha);
 
-				RespostaServidor respostaServidor = (RespostaServidor) ino.readObject();
-
-				// Se a mensagem não tiver umas da opções teremos de introduzir novo comando.
-				while (respostaServidor.getMensagemCompleta().contains("Valor errado"))
+				if (escolha.equals("6"))
 				{
-					System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
-					System.out.print("-- ");
+					System.out.println("[Client Side] - Operação a ser executada no cliente");
 
-					// Recebe a escolha do cliente e envia para o server
-					escolha = reader.readLine();
-					// System.out.println("[Client Side] > " + escolha);
+					File tmp = new File(localDirectory);
+
+					System.out.print("[Cliente Side] - ");
+					printDirectoryClient(Objects.requireNonNull(tmp.list()), localDirectory);
+				}
+				else if (escolha.equals("7"))
+				{
+					System.out.println("[Client Side] - Operação a ser executada no cliente - Mudar Directoria do Cliente");
+
+				}
+				else
+				{
 					out.writeUTF(escolha);
 
-					respostaServidor = (RespostaServidor) ino.readObject();
-				}
+					RespostaServidor respostaServidor = (RespostaServidor) ino.readObject();
 
-				// Trabalha os comandos - MENU !!
-				switch (respostaServidor.getResposta())
-				{
-					default:
-						System.out.println("DEFAULT - FALTA TRATAR ISTO - Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
-						return;
-
-					case "PW":
+					// Se a mensagem não tiver umas da opções teremos de introduzir novo comando.
+					while (respostaServidor.getMensagemCompleta().contains("Valor errado"))
+					{
 						System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
 						System.out.print("-- ");
-						String newPW = reader.readLine();
-						System.out.println("[Client Side] > " + newPW);
-						out.writeUTF(newPW);
+
+						// Recebe a escolha do cliente e envia para o server
+						escolha = reader.readLine();
+						// System.out.println("[Client Side] > " + escolha);
+						out.writeUTF(escolha);
 
 						respostaServidor = (RespostaServidor) ino.readObject();
+					}
 
-						System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
-						// FALTA -- CHAMAR AQUI UMA FUNÇÃO LOGIN
-						clientLogin(clientStreams);
+					// Trabalha os comandos - MENU !!
+					switch (respostaServidor.getResposta())
+					{
+						default:
+							System.out.println("DEFAULT - FALTA TRATAR ISTO - Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+							return;
 
-						break;
+						//Lista a diretoria do servidor
+						case "ServerDir":
+							RespostaDiretorias dirObject = (RespostaDiretorias) ino.readObject();
+							System.out.print("Recebeu do servidor > ");
+							printDirectoryClient(dirObject.getDirectoryList(), dirObject.getMainDirectory());
 
-					case "LOGOUT":
-						System.out.println("LOGOUT");
+							break;
 
-						break;
-					case "EXIT":
-						System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
-						return;
+						case "ChangeDir":
+
+							System.out.println("FALTA FAZER O CHANGE DIR DO SERVIDOR");
+
+							break;
+
+						case "PW":
+							System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+							System.out.print("-- ");
+							String newPW = reader.readLine();
+							System.out.println("[Client Side] > " + newPW);
+							out.writeUTF(newPW);
+
+							respostaServidor = (RespostaServidor) ino.readObject();
+
+							System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+							// FALTA -- CHAMAR AQUI UMA FUNÇÃO LOGIN
+							clientLogin(clientStreams);
+
+							break;
+
+						case "LOGOUT":
+							System.out.println("LOGOUT");
+
+							break;
+						case "EXIT":
+							System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+							return;
+					}
 				}
-
-				System.out.println("TESTE -> QUEREMOS NOVO COMANDO!");
 			}
 
-		} catch (UnknownHostException e) {
+		}
+		catch (UnknownHostException e) {
 			System.out.println("Socket:" + e.getMessage());
-		} catch (EOFException e) {
+		}
+		catch (EOFException e) {
 			System.out.println("EOF:" + e.getMessage());
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			System.out.println("IO:" + e.getMessage());
-		} catch (ClassNotFoundException e) {
+		}
+		catch (ClassNotFoundException e) {
 			e.printStackTrace();
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			e.printStackTrace();
-		} finally {
+		}
+		finally {
 			if (s != null)
 			try {
 				s.close();
@@ -113,6 +153,20 @@ public class ucClient
 			}
 		}
     }
+
+	// Faz o print da lista que recebemos como árvore de diretorias
+	private static void printDirectoryClient(String[] list, String main)
+	{
+		System.out.println(" Lista Directoria do Cliente: ");
+		String[] split = main.split("\\\\");
+		System.out.println("." + split[split.length - 1]);
+
+		for (String atual : list)
+		{
+			System.out.println("'-- " + atual);
+		}
+
+	}
 
 
 	private static void clientLogin(StreamsClass clientStreams) throws Exception
@@ -141,7 +195,7 @@ public class ucClient
 
 
 				RespostaLogin respostaLogin = (RespostaLogin) ino.readObject();
-				System.out.println("[CLIENT SIDE] -> " + respostaLogin.toString());
+				// System.out.println("[CLIENT SIDE] -> " + respostaLogin.toString());
 
 				boolean login = (Boolean) respostaLogin.getResposta();
 				if (login)
