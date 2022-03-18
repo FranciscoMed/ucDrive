@@ -14,10 +14,42 @@ public class ucServer {
         int numero=0;
 
 
+        String configPathManual = ucServer.rootFolderPath + "\\ServerConfig";
+        int  heartbeat , port = 7000, failbeat ;
+
+        try
+        {
+            File config = new File(configPathManual);
+            BufferedReader br = new BufferedReader(new FileReader(config));
+            String serverConfig;
+
+            while ((serverConfig = br.readLine()) != null)
+            {
+
+                if (serverConfig.contains("heartbeat:"))
+                {
+                    heartbeat = Integer.parseInt(serverConfig.substring(11));
+                }
+                else if (serverConfig.contains("failbeat:"))
+                {
+                    failbeat =  Integer.parseInt(serverConfig.substring(10));
+                }
+                else if(serverConfig.contains("port:"))
+                {
+                    port =  Integer.parseInt(serverConfig.substring((6)));
+                }
+               
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
         //Lê Config
         try{
-            int serverPort = 7000;
-            System.out.println("A Escuta no Porto 7000");
+
+            int serverPort = port;
+            System.out.println("A Escuta no Porto " + serverPort);
             ServerSocket listenSocket = new ServerSocket(serverPort);
 
             System.out.println("Root Folder Directory = " + rootFolderPath);
