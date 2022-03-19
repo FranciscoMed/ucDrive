@@ -132,8 +132,8 @@ class Connection extends Thread
         System.out.println("Root Folder Path > " + ucServer.rootFolderPath);
 
         // Se quisermos adicionar USERS manualmente usando o Ficheiro de texto
-        /*
 
+        /*
         String configPathManual = ucServer.rootFolderPath + "\\UsersConfigManual";
 
         try
@@ -142,7 +142,9 @@ class Connection extends Thread
             BufferedReader br = new BufferedReader(new FileReader(config));
             String usersConfigRead, username = null, userDirectory = null, pass = null;
 
-            /*
+
+            List<User> users = new ArrayList<>();
+
             while ((usersConfigRead = br.readLine()) != null)
             {
 
@@ -161,6 +163,7 @@ class Connection extends Thread
                     // Directory será o ultimo campo de um user por isso, cria-se aqui.
                     User tmp = new User(username,pass, userDirectory);
                     users.add(tmp);
+                    tmp.toString();
                 }
             }
 
@@ -168,11 +171,12 @@ class Connection extends Thread
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        */
+         */
 
         login(servidorLigado.usersConnected);
-
     }
 
     // Faz a escrita da lista de Users do Ficheiro de Objetos
@@ -186,9 +190,14 @@ class Connection extends Thread
             ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
             objectOut.writeObject(listUsers);
 
+            for (User u : listUsers)
+            {
+                System.out.println(u.toString());
+            }
+
             objectOut.close();
 
-            System.out.println("User foi escrito para o ficheiro!");
+            System.out.println("Users foram escritos para o ficheiro!");
 
         }
         catch (Exception e) {
@@ -212,9 +221,11 @@ class Connection extends Thread
             listUsersRead = (List<User>) objectIn.readObject();
             objectIn.close();
 
+
+
             for (User u:listUsersRead)
             {
-                System.out.println("Read User: " + u.getUsername() + "   > " + u.getPassword());
+                System.out.println(u.toString());
             }
 
         }
@@ -356,14 +367,20 @@ class Connection extends Thread
                 case "2":
                     // Listar Dir Servidor
                     System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [2] > Listar Dir Servidor");
-                    outo.writeObject(new RespostaServidor("ServerDir", "A diretoria do user " + user.getUsername() + " atual do servidor é: " + this.userDirectory));
-                    outo.writeObject(new RespostaDiretorias("ServerDir", this.userDirectory));
+                    outo.writeObject(new RespostaServidor("ServerDir", "A diretoria atual do user[" + user.getUsername() + "] no servidor é: " + user.getDirectory()));
+                    outo.writeObject(new RespostaDiretorias("ServerDir",  user.getFullDirectory()));
                     break;
 
                 case "3":
+                    // Mudar Dir Servidor
                     System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [3] > Mudar Dir Servidor");
 
+                    outo.writeObject(new RespostaServidor("ChangeDir", "A diretoria atual do User[" + user.getUsername() + "] no servidor é: " + user.getDirectory() + "!\nIntroduza a nova diretoria ou [Back] para voltar atrás!"));
+                    changeUserDirectory(user);
+                    System.out.println("FINAL DO CHANGE USER DIRECTORY!!!!");
+
                     break;
+
                 case "6":
                     // Descarregar ficheiro
                     System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [6] > Descarregar ficheiro");
@@ -444,6 +461,96 @@ class Connection extends Thread
         catch (Exception e) {
             e.printStackTrace();
         }
+
+    }
+
+    // Faz o print da lista que recebemos como árvore de diretorias
+    private synchronized void changeUserDirectory(User userAtual) throws Exception
+    {
+        String userDirectory = userAtual.getFullDirectory();
+        String shortDirectory = userAtual.getDirectory();
+        System.out.println("thisDir: " + userDirectory);
+
+        String[] split = userDirectory.split("\\\\");
+
+        // Verificamos quais os possíveis destinos
+        String[] listaDiretoria = new File(userDirectory).list();
+        String inputDir = "";
+
+        boolean changedDirectory = false;
+        while (!changedDirectory)
+        {
+            inputDir = in.readUTF();
+
+            if (inputDir.equals("Back") && split[split.length - 1].equals(userAtual.getUsername()))
+            {
+                System.out.println("[Server Side] - User[" + userAtual.getUsername() + "] não tem permissões para aceder à pasta " + split[split.length - 1]);
+                RespostaServidor respostaServidor = new RespostaServidor("RepeatDir", "Não tem acesso a essa pasta. Introduza novo caminho!");
+                outo.writeObject(respostaServidor);
+            }
+            else if (inputDir.equals("Back") && !split[split.length - 1].equals(userAtual.getUsername()))
+            {
+                inputDir = split[0];
+
+                for (int i = 1; i < split.length - 1; i++)
+                {
+                    inputDir = inputDir + "\\" + split[i];
+                }
+
+                changedDirectory = true;
+                userAtual.setFullDirectory(inputDir);
+                userAtual.setDirectory(inputDir.split("\\\\")[inputDir.split("\\\\").length - 1]);
+                userDirectory = inputDir;
+            }
+            else
+            {
+                // Percorre a lista de possíveis destinos
+                for (String d : listaDiretoria)
+                {
+                    if (inputDir.equals(d))
+                    {
+                        // Verifica que a próxima diretoria é uma pasta.
+                        if (new File(userDirectory + "\\" + inputDir).isDirectory())
+                        {
+                            changedDirectory = true;
+                            userAtual.setFullDirectory(userDirectory + "\\" + inputDir);
+                            userAtual.setDirectory(shortDirectory + "\\" + inputDir);
+                        }
+                        break;
+                    }
+                }
+
+                // Se ainda não mudou pede de novo
+                if (!changedDirectory)
+                {
+                    String textoResposta = "A diretoria " + inputDir + " não existe dentro da diretoria atual " + split[split.length - 1] + "ou não é uma pasta. Utilize uma das possíveis!";
+                    System.out.println("[Server Side] - " + textoResposta);
+                    RespostaServidor respostaServidor = new RespostaServidor("WrongDir", textoResposta);
+                    outo.writeObject(respostaServidor);
+                    outo.writeObject(new RespostaDiretorias("ServerDir", userDirectory));
+                }
+            }
+        }
+
+        String textoResposta = "A diretoria do user[" + userAtual.getUsername() + "] mudou para " + userAtual.getDirectory() + "!";
+        System.out.println("[Server Side] - " + textoResposta);
+        outo.writeObject(new RespostaServidor("YesDir", textoResposta));
+
+        // Vai à lista de Users e altera a diretoria, escrevendo de novo no ficheiro objeto a nova diretoria
+        List<User> users = ReadUsersFromFile(configPath);
+        User foundUser = null;
+        // Percorre os users até encontrar
+        for(User u : users)
+        {
+            // Encontrou o USER
+            if (u.getUsername().equals(userAtual.getUsername()))
+            {
+                u.setFullDirectory(userAtual.getFullDirectory());
+                u.setDirectory(userAtual.getDirectory());
+                break;
+            }
+        }
+        WriteUsersToFile(users, configPath);
 
     }
 }

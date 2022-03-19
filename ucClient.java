@@ -13,7 +13,6 @@ public class ucClient
 		Socket s = null;
 		int serversocket = 7000;
 
-
 		try
 		{
 
@@ -41,7 +40,14 @@ public class ucClient
 
 				// Recebe a escolha do cliente e envia para o server
 				String escolha = reader.readLine();
-				// System.out.println("[Client Side] > " + escolha);
+
+				// Verifica se a escolha será um Inteiro (escolha possivel)
+				while (!isInteger(escolha))
+				{
+					System.out.println("Valor incorrecto.Introduza novamente:\n[0] Alterar PW  \n[1] Alterar endereços \n[2] Listar Dir Servidor \n[3] Mudar Dir Servidor \n[4] Listar Dir Cliente\n[5] Mudar Dir Cliente \n[6] Descarregar ficheiro \n[7] Carregar ficheiro \n[8] Exit");
+					System.out.print("-- ");
+					escolha = reader.readLine();
+				}
 
 				if (escolha.equals("4"))
 				{
@@ -57,7 +63,6 @@ public class ucClient
 					System.out.println("[Client Side] - Operação a ser executada no cliente");
 					System.out.print("[Cliente Side] - ");
 					changeDirectoryClient(localClient, clientStreams);
-
 				}
 				else
 				{
@@ -88,6 +93,7 @@ public class ucClient
 
 						//Lista a diretoria do servidor
 						case "ServerDir":
+							System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
 							RespostaDiretorias dirObject = (RespostaDiretorias) ino.readObject();
 							System.out.print("Recebeu do servidor > ");
 							printDirectoryClient(dirObject.getDirectoryList(), dirObject.getMainDirectory());
@@ -95,9 +101,46 @@ public class ucClient
 							break;
 
 						case "ChangeDir":
+							System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+							System.out.print("-- ");
+							String newServerDirectory = reader.readLine();
+							System.out.println("[Client Side] > " + newServerDirectory);
+							out.writeUTF(newServerDirectory);
 
-							System.out.println("FALTA FAZER O CHANGE DIR DO SERVIDOR");
+							respostaServidor = (RespostaServidor) ino.readObject();
+							// Faz o tratamento das respostas que não são positivas (Diretoria que não existe, ou tentar dar Back para pastas sem acesso)
+							while (!respostaServidor.getResposta().equals("YesDir"))
+							{
+								switch (respostaServidor.getResposta())
+								{
+									case "RepeatDir":
+										System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+										System.out.print("-- ");
+										newServerDirectory = reader.readLine();
+										System.out.println("[Client Side] > " + newServerDirectory);
+										out.writeUTF(newServerDirectory);
+										respostaServidor = (RespostaServidor) ino.readObject();
 
+										break;
+
+									case "WrongDir":
+										System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+
+										dirObject = (RespostaDiretorias) ino.readObject();
+										System.out.print("Recebeu do servidor >");
+										printDirectoryClient(dirObject.getDirectoryList(), dirObject.getMainDirectory());
+
+										// Leitura do novo
+										System.out.print("-- ");
+										newServerDirectory = reader.readLine();
+										System.out.println("[Client Side] > " + newServerDirectory);
+										out.writeUTF(newServerDirectory);
+										respostaServidor = (RespostaServidor) ino.readObject();
+										break;
+								}
+							}
+
+							System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
 							break;
 
 						case "PW":
@@ -149,6 +192,21 @@ public class ucClient
 		}
     }
 
+
+	// Verifica se o numero em formato String, pode ser transformado num INT (os menus são Inteiros)
+	private static boolean isInteger(String s)
+	{
+		try
+		{
+			Integer.parseInt(s);
+		}
+		catch (NumberFormatException | NullPointerException e) {
+			return false;
+		}
+		// only got here if we didn't return false
+		return true;
+	}
+
 	// Faz o print da lista que recebemos como árvore de diretorias
 	private static void printDirectoryClient(String[] list, String main)
 	{
@@ -189,6 +247,7 @@ public class ucClient
 				{
 					newDirectory = newDirectory + "\\" + split[i];
 				}
+
 				changedDirectory = true;
 				thisClient.localDirectory = newDirectory;
 			}
@@ -199,8 +258,12 @@ public class ucClient
 				{
 					if (newDirectory.equals(d))
 					{
-						thisClient.localDirectory = thisClient.localDirectory + "\\" + newDirectory;
-						changedDirectory = true;
+						// Verifica que a próxima diretoria é uma pasta.
+						if (new File(thisClient.localDirectory + "\\" + newDirectory).isDirectory())
+						{
+							thisClient.localDirectory = thisClient.localDirectory + "\\" + newDirectory;
+							changedDirectory = true;
+						}
 						break;
 					}
 				}
@@ -212,7 +275,7 @@ public class ucClient
 			}
 			else
 			{
-				System.out.println("Esse destino " + newDirectory + " não existe! Tente um novo dentro dos possíveis.");
+				System.out.println("Esse destino " + newDirectory + " não existe ou não é uma pasta! Tente um novo dentro dos possíveis.");
 				printDirectoryClient(listaDiretoria, split[split.length - 1]);
 			}
 
