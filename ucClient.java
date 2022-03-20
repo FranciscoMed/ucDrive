@@ -91,6 +91,69 @@ public class ucClient
 							System.out.println("DEFAULT - FALTA TRATAR ISTO - Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
 							return;
 
+						// Descarregar o ficheiro
+						case "ChooseFile":
+							System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+							RespostaDiretorias teste = (RespostaDiretorias) ino.readObject();
+							System.out.print("Recebeu do servidor > ");
+							printDirectoryClient(teste.getDirectoryList(), teste.getMainDirectory());
+
+							System.out.print("-- ");
+							String newFilename = reader.readLine();
+							System.out.println("[Client Side] > " + newFilename);
+							out.writeUTF(newFilename);
+
+
+							respostaServidor = (RespostaServidor) ino.readObject();
+							// Faz o tratamento das respostas que não são positivas (Ficheiro que não pode ser descarregado)
+							while (respostaServidor.getResposta().equals("RepeatFile"))
+							{
+								System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+								System.out.print("-- ");
+								newFilename = reader.readLine();
+								System.out.println("[Client Side] > " + newFilename);
+								out.writeUTF(newFilename);
+								respostaServidor = (RespostaServidor) ino.readObject();
+
+							}
+
+							if (respostaServidor.getResposta().equals("YesFile"))
+							{
+								System.out.println("SUCESSOOOOOOO");
+								System.out.println("Vai escrever para -> " + localClient.localDirectory + "\\" + newFilename);
+
+
+								s = new Socket("localhost", 6000);
+
+								System.out.println("SOCKET= " + s );
+
+								byte[] contents = new byte[10000];
+								FileOutputStream fos = new FileOutputStream(localClient.localDirectory + "\\" + newFilename);
+								BufferedOutputStream bos = new BufferedOutputStream(fos);
+
+								InputStream is = s.getInputStream();
+								int bytesRead = 0;
+
+								while ((bytesRead = is.read(contents)) != -1)
+								{
+									bos.write(contents, 0, bytesRead);
+								}
+
+								bos.flush();
+								s.close();
+								System.out.println("File saved sucessfully!");
+
+
+								System.out.println("teste");
+
+
+							}
+
+							System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+
+
+							break;
+
 						//Lista a diretoria do servidor
 						case "ServerDir":
 							System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());

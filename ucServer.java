@@ -2,6 +2,7 @@
 import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -89,6 +90,7 @@ public class ucServer {
     }
 }
 
+
 class Connection extends Thread
 {
     DataOutputStream out;
@@ -132,7 +134,6 @@ class Connection extends Thread
         System.out.println("Root Folder Path > " + ucServer.rootFolderPath);
 
         // Se quisermos adicionar USERS manualmente usando o Ficheiro de texto
-
         /*
         String configPathManual = ucServer.rootFolderPath + "\\UsersConfigManual";
 
@@ -390,12 +391,15 @@ class Connection extends Thread
                     // Descarregar ficheiro
                     System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [6] > Descarregar ficheiro");
 
+
+                    // Escolher o ficheiro
                     outo.writeObject(new RespostaServidor("ChooseFile", "Qual o ficheiro que pretende descarregar ?"));
-                    outo.writeObject(new RespostaDiretorias("ServerDir",  user.getFullDirectory()));
+                    RespostaDiretorias diretoriaAtual = new RespostaDiretorias("ServerDir",  user.getFullDirectory());
+                    outo.writeObject(diretoriaAtual);
 
+                    downloadFile(user, diretoriaAtual);
 
-
-
+                    System.out.println("FIM DO DESCARREGAR NO SERVIDOR !!!!!!!!!!!!!!!!! "); // FALTA APAGAR
 
                     break;
                 case "7":
@@ -422,6 +426,74 @@ class Connection extends Thread
             }
         }
     }
+
+    private synchronized void downloadFile(User userAtual, RespostaDiretorias diretoriaAtual) throws Exception
+    {
+        String fileName = in.readUTF();
+
+
+        String fullFilePath = "";
+
+        // Verifica se é um ficheiro existente e se é possível ser descarregado.
+        boolean foundFileOnDirectory = false;
+        while (!foundFileOnDirectory)
+        {
+            if (fileName.equals("Cancel"))
+            {
+                return;
+            }
+
+            for (String fAtual : diretoriaAtual.getDirectoryList())
+            {
+                if (fAtual.equals(fileName))
+                {
+                    fullFilePath = userAtual.getFullDirectory() + "\\" + fileName;
+
+                    if (new File(fullFilePath).isFile())
+                    {
+                        foundFileOnDirectory = true;
+                    }
+                }
+            }
+
+            if (!foundFileOnDirectory)
+            {
+                System.out.println("[Server Side] - File[" + fileName + "] não existe ou não pode ser descarregado.");
+                RespostaServidor respostaServidor = new RespostaServidor("RepeatFile", "Ficheiro não pode ser descarregado. Introduza novo nome!");
+                outo.writeObject(respostaServidor);
+
+                fileName = in.readUTF();
+            }
+        }
+
+        System.out.println("Nome do ficheiro a dar upload: " + fileName);
+        System.out.println("Ficheiro a dar upload: " + fullFilePath);
+
+        RespostaServidor respostaServidor = new RespostaServidor("YesFile", "Ficheiro escolhido com sucesso. A iniciar download!");
+        outo.writeObject(respostaServidor);
+
+
+        // Cria Socket independente para Download do ficheiro
+        try
+        {
+            int downloadPort = 6000;
+            System.out.println("[Server Side] - Download Socket no Porto " + downloadPort);
+            ServerSocket listenSocket = new ServerSocket(downloadPort);
+
+            System.out.println("Download SOCKET = "+ listenSocket);
+            while(true)
+            {
+                Socket downloadSocket = listenSocket.accept(); // BLOQUEANTE
+                System.out.println("Download_Client_SOCKET (created at accept())= " + downloadSocket);
+                new DownloadConnection(downloadSocket, fullFilePath);
+
+                listenSocket.close();
+
+                System.out.println("[Server Side] - Ficheiro enviado com sucesso!");
+            }
+        }catch(IOException e) {System.out.println("Listen: " + e.getMessage());}
+    }
+
 
     private synchronized void changePassword(User userAtual) throws Exception
     {
