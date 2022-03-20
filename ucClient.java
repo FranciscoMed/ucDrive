@@ -20,7 +20,7 @@ public class ucClient
 
 			ucClient localClient = new ucClient();
 
-			System.out.println("SOCKET= " + s);
+			System.out.println("SOCKET = " + s);
 
 			StreamsClass clientStreams = new StreamsClass(s);
 
@@ -119,7 +119,6 @@ public class ucClient
 
 							if (respostaServidor.getResposta().equals("YesFile"))
 							{
-								System.out.println("SUCESSOOOOOOO");
 								System.out.println("Vai escrever para -> " + localClient.localDirectory + "\\" + newFilename);
 
 
@@ -141,17 +140,11 @@ public class ucClient
 
 								bos.flush();
 								s.close();
-								System.out.println("File saved sucessfully!");
 
 
-								System.out.println("teste");
-
-
+								respostaServidor = (RespostaServidor) ino.readObject();
+								System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
 							}
-
-							System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
-
-
 							break;
 
 						//Lista a diretoria do servidor
