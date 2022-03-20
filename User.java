@@ -7,14 +7,14 @@ public class User implements Serializable
     private String username;
     private String password;
     private String directory;
-    private String fullDirectory;
+
 
     public User(String username, String password)
     {
         this.username = username;
         this.password = password;
         this.directory = username;
-        this.fullDirectory = ucServer.usersFolderPath + "\\" + username;
+
     }
 
     public User(String username, String password, String directory)
@@ -22,7 +22,7 @@ public class User implements Serializable
         this.username = username;
         this.password = password;
         this.directory = directory;
-        this.fullDirectory = ucServer.usersFolderPath + "\\" + directory;
+
     }
 
     @Override
@@ -31,16 +31,12 @@ public class User implements Serializable
                 "username='" + username + '\'' +
                 ", password='" + password + '\'' +
                 ", directory='" + directory + '\'' +
-                ", fullDirectory='" + fullDirectory + '\'' +
+                ", fullDirectory='" + getFullDirectory() + '\'' +
                 '}';
     }
 
     public String getFullDirectory() {
-        return fullDirectory;
-    }
-
-    public void setFullDirectory(String fullDirectory) {
-        this.fullDirectory = fullDirectory;
+        return ucServer.usersFolderPath + "\\" + directory;
     }
 
     public void setUsername(String username) {

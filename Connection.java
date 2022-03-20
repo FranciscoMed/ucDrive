@@ -496,7 +496,7 @@ class Connection extends Thread
                 }
 
                 changedDirectory = true;
-                userAtual.setFullDirectory(inputDir);
+
                 userAtual.setDirectory(inputDir.split("\\\\")[inputDir.split("\\\\").length - 1]);
                 userDirectory = inputDir;
             }
@@ -511,7 +511,7 @@ class Connection extends Thread
                         if (new File(userDirectory + "\\" + inputDir).isDirectory())
                         {
                             changedDirectory = true;
-                            userAtual.setFullDirectory(userDirectory + "\\" + inputDir);
+
                             userAtual.setDirectory(shortDirectory + "\\" + inputDir);
                         }
                         break;
@@ -543,7 +543,7 @@ class Connection extends Thread
             // Encontrou o USER
             if (u.getUsername().equals(userAtual.getUsername()))
             {
-                u.setFullDirectory(userAtual.getFullDirectory());
+
                 u.setDirectory(userAtual.getDirectory());
                 break;
             }
