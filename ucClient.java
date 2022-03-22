@@ -24,6 +24,7 @@ public class ucClient
 
 			StreamsClass clientStreams = new StreamsClass(s);
 
+			DataInputStream in = clientStreams.getIn();
 			ObjectInputStream ino = clientStreams.getIno();
 			DataOutputStream out = clientStreams.getOut();
 			BufferedReader reader = clientStreams.getReader();
@@ -85,11 +86,110 @@ public class ucClient
 					}
 
 					// Trabalha os comandos - MENU !!
-					switch (respostaServidor.getResposta())
-					{
+					switch (respostaServidor.getResposta()) {
 						default:
 							System.out.println("DEFAULT - FALTA TRATAR ISTO - Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
 							return;
+
+
+						case "upFile":
+							Diretoria diretoria = new Diretoria(localClient.localDirectory);
+							printDirectoryClient(diretoria.getDirectoryList(), diretoria.getMainDirectory());
+							System.out.println("Escolha o ficheiro a dar upload");
+
+							String upFile = reader.readLine();
+							System.out.println("[Client Side] > " + upFile);
+
+
+
+							boolean foundFileOnDirectory = false;
+							String fullFilePath = "";
+							while (!foundFileOnDirectory) {
+								if (upFile.equals("Cancel")) {
+									break;
+								}
+
+								for (String fAtual : diretoria.getDirectoryList()) {
+									if (fAtual.equals(upFile)) {
+										fullFilePath = diretoria.getMainDirectory() + "\\" + upFile;
+
+										if (new File(fullFilePath).isFile()) {
+											foundFileOnDirectory = true;
+										}
+									}
+								}
+
+								if (!foundFileOnDirectory) {
+									System.out.println("File[" + upFile + "] não existe ou não pode ser descarregado.");
+
+									System.out.println("Escolha o ficheiro a dar upload ou Cancel para cancelar a operação");
+									upFile = reader.readLine();
+
+								}
+
+							}
+
+							out.writeUTF(upFile);
+
+
+							File file = new File(fullFilePath);
+							FileInputStream fis = new FileInputStream(file);
+							BufferedInputStream bis = new BufferedInputStream(fis);
+
+							int port = in.readInt();
+							s = new Socket("localhost", port);
+
+							System.out.println("SOCKET= " + s );
+
+							out = new DataOutputStream(s.getOutputStream());
+
+							try
+							{
+								byte[] contents;
+								long fileLength = file.length();
+								long current = 0;
+
+								while (current != fileLength)
+								{
+									int size = 10000;
+									if (fileLength - current >= size)
+									{
+										current = current + size;
+									}
+									else
+									{
+										size = (int) (fileLength - current);
+										current = fileLength;
+									}
+
+									contents = new byte[size];
+
+									bis.read(contents, 0, size);
+									out.write(contents);
+
+									System.out.println("Sending File[" + file.getName() + "] ... " + (current*100)/fileLength + "% done!" );
+								}
+
+								out.flush();
+								s.close();
+
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+
+							respostaServidor = (RespostaServidor) ino.readObject();
+
+							if (respostaServidor.getResposta().equals("uploadFinish"))
+							{
+								System.out.println("Ficheiro enviado com sucesso!");
+
+							}else {
+								System.out.println("Erro a enviar o ficheiro");
+							}
+
+							break;
+
+
 
 						// Descarregar o ficheiro
 						case "ChooseFile":
@@ -121,8 +221,8 @@ public class ucClient
 							{
 								System.out.println("Vai escrever para -> " + localClient.localDirectory + "\\" + newFilename);
 
-
-								s = new Socket("localhost", 6000);
+								int uploadport = in.readInt();
+								s = new Socket("localhost", uploadport);
 
 								System.out.println("SOCKET= " + s );
 

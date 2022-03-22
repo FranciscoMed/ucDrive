@@ -4,8 +4,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
-class Connection extends Thread
-{
+class Connection extends Thread {
     DataOutputStream out;
     DataInputStream in;
     ObjectOutputStream outo;
@@ -20,13 +19,11 @@ class Connection extends Thread
 
     String configPath = ucServer.rootFolderPath + "\\UsersConfig";
 
-    public Connection(Socket aClientSocket, int numero, ucServer servidorPrimario)
-    {
+    public Connection(Socket aClientSocket, int numero, ucServer servidorPrimario) {
         this.thread_number = numero;
         this.servidorLigado = servidorPrimario;
 
-        try
-        {
+        try {
             clientSocket = aClientSocket;
 
             outo = new ObjectOutputStream(clientSocket.getOutputStream());
@@ -36,13 +33,13 @@ class Connection extends Thread
             in = new DataInputStream(clientSocket.getInputStream());
 
             this.start();
+        } catch (IOException e) {
+            System.out.println("Connection:" + e.getMessage());
         }
-        catch(IOException e){System.out.println("Connection:" + e.getMessage());}
     }
 
     //=============================
-    public synchronized void run()
-    {
+    public synchronized void run() {
 
         System.out.println("Root Folder Path > " + ucServer.rootFolderPath);
 
@@ -94,18 +91,15 @@ class Connection extends Thread
     }
 
     // Faz a escrita da lista de Users do Ficheiro de Objetos
-    public synchronized void WriteUsersToFile(List<User> listUsers, String filePath)
-    {
+    public synchronized void WriteUsersToFile(List<User> listUsers, String filePath) {
         System.out.println("Writing all Users to File!");
 
-        try
-        {
+        try {
             FileOutputStream fileOut = new FileOutputStream(filePath);
             ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
             objectOut.writeObject(listUsers);
 
-            for (User u : listUsers)
-            {
+            for (User u : listUsers) {
                 System.out.println(u.toString());
             }
 
@@ -113,8 +107,7 @@ class Connection extends Thread
 
             System.out.println("Users foram escritos para o ficheiro!");
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -122,28 +115,23 @@ class Connection extends Thread
 
 
     // Faz a leitura da lista de Users do Ficheiro de Objetos
-    public synchronized List<User> ReadUsersFromFile(String filePath)
-    {
+    public synchronized List<User> ReadUsersFromFile(String filePath) {
         System.out.println("Reading Users from File Config!");
 
         List<User> listUsersRead = null;
 
-        try
-        {
+        try {
             FileInputStream fileIn = new FileInputStream(filePath);
             ObjectInputStream objectIn = new ObjectInputStream(fileIn);
             listUsersRead = (List<User>) objectIn.readObject();
             objectIn.close();
 
 
-
-            for (User u:listUsersRead)
-            {
+            for (User u : listUsersRead) {
                 System.out.println(u.toString());
             }
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -151,8 +139,7 @@ class Connection extends Thread
     }
 
 
-    public synchronized void login(List<String> usersConnected)
-    {
+    public synchronized void login(List<String> usersConnected) {
         List<User> users = new ArrayList<>();
         System.out.println(ucServer.rootFolderPath);
         String configPath = ucServer.rootFolderPath + "\\UsersConfig";
@@ -162,11 +149,9 @@ class Connection extends Thread
         boolean login = true;
 
         // LOGIN
-        try
-        {
+        try {
             // Continua a fazer até conseguir fazer login
-            while(login)
-            {
+            while (login) {
                 outo.writeObject(new RespostaServidor("LoginUser", "Introduza username: "));
                 String usernameReceived = in.readUTF();
 
@@ -181,37 +166,29 @@ class Connection extends Thread
                 User foundUser = null;
 
                 // Percorre todos os users à procura do pedido
-                for(User u :users)
-                {
-                    if (u.getUsername().equals(user.getUsername()) && u.getPassword().equals(user.getPassword()))
-                    {
+                for (User u : users) {
+                    if (u.getUsername().equals(user.getUsername()) && u.getPassword().equals(user.getPassword())) {
                         // True -> Login com sucesso
                         foundUser = u;
                         break;
                     }
                 }
 
-                if (foundUser != null)
-                {
+                if (foundUser != null) {
 
                     boolean userAlreadyConnected = false;
                     // Verifica se o User não está ligado já ao servidor!
-                    for (String usernameToCompare : usersConnected)
-                    {
-                        if (usernameToCompare.equals(foundUser.getUsername()))
-                        {
+                    for (String usernameToCompare : usersConnected) {
+                        if (usernameToCompare.equals(foundUser.getUsername())) {
                             userAlreadyConnected = true;
                         }
                     }
 
-                    if (userAlreadyConnected)
-                    {
+                    if (userAlreadyConnected) {
                         // False -> Falha no login
                         outo.writeObject(new RespostaLogin(false, null));
                         System.out.println("[Server Side] - User já logado - Enviei falha");
-                    }
-                    else
-                    {
+                    } else {
                         // True -> Login com sucesso
                         usersConnected.add(foundUser.getUsername());
                         outo.writeObject(new RespostaLogin(true, foundUser.getDirectory()));
@@ -223,40 +200,38 @@ class Connection extends Thread
 
                         menu(user);
                     }
-                }
-                else
-                {
+                } else {
                     // False -> Falha no login
                     outo.writeObject(new RespostaLogin(false, null));
                     System.out.println("[Server Side] - Enviei falha");
                 }
             }
 
+        } catch (EOFException e) {
+            System.out.println("EOF:" + e);
+        } catch (IOException e) {
+            System.out.println("IO:" + e);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        catch(EOFException e){System.out.println("EOF:" + e);}
-        catch(IOException e){System.out.println("IO:" + e);}
-        catch (Exception e) {e.printStackTrace();}
     }
 
-    public synchronized void menu(User user) throws Exception
-    {
+    public synchronized void menu(User user) throws Exception {
         //Listar dir
         //Mudar dir
         //Descarregar dir
 
 
         // LOOP para ler o comando do cliente
-        while (true)
-        {
+        while (true) {
             System.out.println("[Server Side] - Waiting for commands from " + user.getUsername());
 
             // Apenas lê quando houver algo a ler
             String escolhaCliente = in.readUTF();
 
             // Verifica que a escolha está dentro dos comandos possíveis
-            while (Integer.parseInt(escolhaCliente) < 0 || Integer.parseInt(escolhaCliente) > 8)
-            {
-                System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: Valor Errado (" + escolhaCliente +") - Tente novamente!");
+            while (Integer.parseInt(escolhaCliente) < 0 || Integer.parseInt(escolhaCliente) > 8) {
+                System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: Valor Errado (" + escolhaCliente + ") - Tente novamente!");
 
                 String texto = "Valor errado - Introduza novo valor dentro dos possiveis!";
                 RespostaServidor respostaServidor = new RespostaServidor("WrongValue", texto);
@@ -266,8 +241,7 @@ class Connection extends Thread
             }
 
 
-            switch (escolhaCliente)
-            {
+            switch (escolhaCliente) {
                 case "0":
                     // Alterar PW
                     System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [0] > Alterar PW");
@@ -281,13 +255,13 @@ class Connection extends Thread
 
                 case "2":
                     // Listar Dir Servidor
-                    System.out.println("teste -----> "  + user.getUsername() + "   " + user.getFullDirectory());
+                    System.out.println("teste -----> " + user.getUsername() + "   " + user.getFullDirectory());
                     System.out.println(userDirectory);
 
 
                     System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [2] > Listar Dir Servidor");
                     outo.writeObject(new RespostaServidor("ServerDir", "A diretoria atual do user[" + user.getUsername() + "] no servidor é: " + user.getDirectory()));
-                    outo.writeObject(new RespostaDiretorias("ServerDir",  user.getFullDirectory()));
+                    outo.writeObject(new RespostaDiretorias("ServerDir", user.getFullDirectory()));
                     break;
 
                 case "3":
@@ -307,7 +281,7 @@ class Connection extends Thread
 
                     // Escolher o ficheiro
                     outo.writeObject(new RespostaServidor("ChooseFile", "Qual o ficheiro que pretende descarregar ?"));
-                    RespostaDiretorias diretoriaAtual = new RespostaDiretorias("ServerDir",  user.getFullDirectory());
+                    RespostaDiretorias diretoriaAtual = new RespostaDiretorias("ServerDir", user.getFullDirectory());
                     outo.writeObject(diretoriaAtual);
 
                     downloadFile(user, diretoriaAtual);
@@ -319,14 +293,19 @@ class Connection extends Thread
                     // Carregar ficheiro
                     System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [7] > Carregar ficheiro");
 
+                    RespostaServidor respostaServidor = new RespostaServidor("upFile", "Carregar para >> " + user.getFullDirectory());
+                    outo.writeObject(respostaServidor);
+                    System.out.println("Enviei upFile");
+                    diretoriaAtual = new RespostaDiretorias("ServerDirectory", user.getFullDirectory());
+
+                    uploadFile(user, diretoriaAtual);
+
                     break;
                 case "8":
                     System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [8] > Exit");
                     // remove o user da lista de ligações
-                    for (String u2 : servidorLigado.usersConnected)
-                    {
-                        if (u2.equals(user.getUsername()))
-                        {
+                    for (String u2 : servidorLigado.usersConnected) {
+                        if (u2.equals(user.getUsername())) {
                             System.out.println("[Server Side] - Removeu User(" + u2 + ") da lista de ligações.");
                             servidorLigado.usersConnected.remove((String) u2);
                             break;
@@ -340,36 +319,31 @@ class Connection extends Thread
         }
     }
 
-    private synchronized void downloadFile(User userAtual, RespostaDiretorias diretoriaAtual) throws Exception
-    {
+    private synchronized void downloadFile(User userAtual, RespostaDiretorias diretoriaAtual) throws Exception {
+
+
         String fileName = in.readUTF();
 
         String fullFilePath = "";
 
         // Verifica se é um ficheiro existente e se é possível ser descarregado.
         boolean foundFileOnDirectory = false;
-        while (!foundFileOnDirectory)
-        {
-            if (fileName.equals("Cancel"))
-            {
+        while (!foundFileOnDirectory) {
+            if (fileName.equals("Cancel")) {
                 return;
             }
 
-            for (String fAtual : diretoriaAtual.getDirectoryList())
-            {
-                if (fAtual.equals(fileName))
-                {
+            for (String fAtual : diretoriaAtual.getDirectoryList()) {
+                if (fAtual.equals(fileName)) {
                     fullFilePath = userAtual.getFullDirectory() + "\\" + fileName;
 
-                    if (new File(fullFilePath).isFile())
-                    {
+                    if (new File(fullFilePath).isFile()) {
                         foundFileOnDirectory = true;
                     }
                 }
             }
 
-            if (!foundFileOnDirectory)
-            {
+            if (!foundFileOnDirectory) {
                 System.out.println("[Server Side] - File[" + fileName + "] não existe ou não pode ser descarregado.");
                 RespostaServidor respostaServidor = new RespostaServidor("RepeatFile", "Ficheiro não pode ser descarregado. Introduza novo nome!");
                 outo.writeObject(respostaServidor);
@@ -385,15 +359,13 @@ class Connection extends Thread
         outo.writeObject(respostaServidor);
 
         // Cria Socket independente para Download do ficheiro
-        try
-        {
-            int downloadPort = 6000;
+        try {
+            int downloadPort = 0;
             System.out.println("[Server Side] - Download Socket no Porto " + downloadPort);
             ServerSocket listenDownloadSocket = new ServerSocket(downloadPort);
-
-            System.out.println("Download SOCKET = "+ listenDownloadSocket);
-            while(true)
-            {
+            out.writeInt(listenDownloadSocket.getLocalPort());
+            System.out.println("Download SOCKET = " + listenDownloadSocket);
+            while (true) {
                 Socket downloadSocket = listenDownloadSocket.accept(); // BLOQUEANTE
                 System.out.println("Download_Client_SOCKET (created at accept())= " + downloadSocket);
 
@@ -405,8 +377,45 @@ class Connection extends Thread
                 respostaServidor = new RespostaServidor("DownloadFinish", "Ficheiro enviado com sucesso!");
                 outo.writeObject(respostaServidor);
             }
-        }catch(IOException e) {System.out.println("Listen: " + e.getMessage());}
+        } catch (IOException e) {
+            System.out.println("Listen: " + e.getMessage());
+        }
     }
+
+    private synchronized void uploadFile(User userAtual, RespostaDiretorias diretoriaAtual) throws Exception {
+
+        System.out.println("A espera do nome do ficheiro");
+        //Pede Nome Ficheiro
+        String fileName = in.readUTF();
+
+
+        try {
+            int uploadPort = 0;
+
+            System.out.println("[Server Side] - Download Socket no Porto " + uploadPort);
+            ServerSocket listenuploadSocket = new ServerSocket(uploadPort);
+            out.writeInt(listenuploadSocket.getLocalPort());
+            System.out.println("upload SOCKET = " + listenuploadSocket);
+
+            while (true) {
+                Socket uploadSocket = listenuploadSocket.accept(); // BLOQUEANTE
+                System.out.println("Download_Client_SOCKET (created at accept())= " + uploadSocket);
+
+                new UploadConnection(uploadSocket, fileName, userAtual.getFullDirectory());
+
+                System.out.println("[Server Side] - Ficheiro recebido com sucesso!");
+                listenuploadSocket.close();
+
+                RespostaServidor respostaServidor = new RespostaServidor("uploadFinish", "Ficheiro enviado com sucesso!");
+                outo.writeObject(respostaServidor);
+            }
+        } catch (IOException e) {
+            System.out.println("Listen: " + e.getMessage());
+        }
+
+    }
+
+
 
 
     private synchronized void changePassword(User userAtual) throws Exception
