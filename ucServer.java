@@ -6,7 +6,8 @@ import java.util.Arrays;
 import java.util.List;
 
 
-public class ucServer {
+public class ucServer
+{
     static final String rootFolderPath = System.getProperty("user.dir");
 
     static String usersFolderPath;

@@ -92,56 +92,64 @@ public class ucClient
 							return;
 
 
+						// Carregar Ficheiro
 						case "upFile":
 							Diretoria diretoria = new Diretoria(localClient.localDirectory);
 							printDirectoryClient(diretoria.getDirectoryList(), diretoria.getMainDirectory());
-							System.out.println("Escolha o ficheiro a dar upload");
+							System.out.println("[Client Side] - Escolha o ficheiro a dar upload");
 
 							String upFile = reader.readLine();
 							System.out.println("[Client Side] > " + upFile);
 
-
-
 							boolean foundFileOnDirectory = false;
 							String fullFilePath = "";
-							while (!foundFileOnDirectory) {
-								if (upFile.equals("Cancel")) {
+							while (!foundFileOnDirectory)
+							{
+								// Verifica se quer terminar o Upload
+								if (upFile.equals("Cancel"))
+								{
 									break;
 								}
 
-								for (String fAtual : diretoria.getDirectoryList()) {
-									if (fAtual.equals(upFile)) {
+								// Procura pelo ficheiro na diretoria atual
+								for (String fAtual : diretoria.getDirectoryList())
+								{
+									if (fAtual.equals(upFile))
+									{
 										fullFilePath = diretoria.getMainDirectory() + "\\" + upFile;
 
-										if (new File(fullFilePath).isFile()) {
+										if (new File(fullFilePath).isFile())
+										{
 											foundFileOnDirectory = true;
 										}
 									}
 								}
 
-								if (!foundFileOnDirectory) {
-									System.out.println("File[" + upFile + "] não existe ou não pode ser descarregado.");
 
-									System.out.println("Escolha o ficheiro a dar upload ou Cancel para cancelar a operação");
+								if (!foundFileOnDirectory)
+								{
+									System.out.println("[Client Side] - File[" + upFile + "] não existe ou não pode ser descarregado.");
+
+									System.out.println("[Client Side] - Escolha o ficheiro a dar upload ou Cancel para cancelar a operação");
 									upFile = reader.readLine();
 
 								}
 
 							}
 
+							// Envia nome do ficheiro para o Servidor
 							out.writeUTF(upFile);
-
 
 							File file = new File(fullFilePath);
 							FileInputStream fis = new FileInputStream(file);
 							BufferedInputStream bis = new BufferedInputStream(fis);
 
 							int port = in.readInt();
-							s = new Socket("localhost", port);
 
-							System.out.println("SOCKET= " + s );
+							Socket uploadSocket = new Socket("localhost", port);
 
-							out = new DataOutputStream(s.getOutputStream());
+							System.out.println("[Client Side] - Upload Socket = " + uploadSocket);
+							out = new DataOutputStream(uploadSocket.getOutputStream());
 
 							try
 							{
@@ -171,14 +179,16 @@ public class ucClient
 								}
 
 								out.flush();
-								s.close();
+								bis.close();
+								fis.close();
+								uploadSocket.close();
 
-							} catch (IOException e) {
+							}
+							catch (IOException e) {
 								e.printStackTrace();
 							}
 
 							respostaServidor = (RespostaServidor) ino.readObject();
-
 							if (respostaServidor.getResposta().equals("uploadFinish"))
 							{
 								System.out.println("Ficheiro enviado com sucesso!");

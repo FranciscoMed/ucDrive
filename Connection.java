@@ -138,7 +138,6 @@ class Connection extends Thread {
         return listUsersRead;
     }
 
-
     public synchronized void login(List<String> usersConnected) {
         List<User> users = new ArrayList<>();
         System.out.println(ucServer.rootFolderPath);
@@ -217,10 +216,6 @@ class Connection extends Thread {
     }
 
     public synchronized void menu(User user) throws Exception {
-        //Listar dir
-        //Mudar dir
-        //Descarregar dir
-
 
         // LOOP para ler o comando do cliente
         while (true) {
@@ -241,7 +236,8 @@ class Connection extends Thread {
             }
 
 
-            switch (escolhaCliente) {
+            switch (escolhaCliente)
+            {
                 case "0":
                     // Alterar PW
                     System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [0] > Alterar PW");
@@ -295,7 +291,7 @@ class Connection extends Thread {
 
                     RespostaServidor respostaServidor = new RespostaServidor("upFile", "Carregar para >> " + user.getFullDirectory());
                     outo.writeObject(respostaServidor);
-                    System.out.println("Enviei upFile");
+                    System.out.println("[Server Side] - Enviei upFile");
                     diretoriaAtual = new RespostaDiretorias("ServerDirectory", user.getFullDirectory());
 
                     uploadFile(user, diretoriaAtual);
@@ -328,8 +324,10 @@ class Connection extends Thread {
 
         // Verifica se é um ficheiro existente e se é possível ser descarregado.
         boolean foundFileOnDirectory = false;
-        while (!foundFileOnDirectory) {
-            if (fileName.equals("Cancel")) {
+        while (!foundFileOnDirectory)
+        {
+            if (fileName.equals("Cancel"))
+            {
                 return;
             }
 
@@ -359,13 +357,16 @@ class Connection extends Thread {
         outo.writeObject(respostaServidor);
 
         // Cria Socket independente para Download do ficheiro
-        try {
+        try
+        {
             int downloadPort = 0;
             System.out.println("[Server Side] - Download Socket no Porto " + downloadPort);
             ServerSocket listenDownloadSocket = new ServerSocket(downloadPort);
             out.writeInt(listenDownloadSocket.getLocalPort());
             System.out.println("Download SOCKET = " + listenDownloadSocket);
-            while (true) {
+
+            while (true)
+            {
                 Socket downloadSocket = listenDownloadSocket.accept(); // BLOQUEANTE
                 System.out.println("Download_Client_SOCKET (created at accept())= " + downloadSocket);
 
@@ -384,38 +385,37 @@ class Connection extends Thread {
 
     private synchronized void uploadFile(User userAtual, RespostaDiretorias diretoriaAtual) throws Exception {
 
-        System.out.println("A espera do nome do ficheiro");
+        System.out.println("[Client Side] - A espera do nome do ficheiro");
         //Pede Nome Ficheiro
         String fileName = in.readUTF();
+        System.out.println("[Client Side] - Nome recebido: " + fileName);
 
+        try
+        {
+            ServerSocket listenUploadSocket = new ServerSocket(0);
+            System.out.println("[Server Side] - Download Socket no Porto " + listenUploadSocket.getLocalPort());
+            out.writeInt(listenUploadSocket.getLocalPort());
+            System.out.println("Upload SOCKET Listening = " + listenUploadSocket);
 
-        try {
-            int uploadPort = 0;
-
-            System.out.println("[Server Side] - Download Socket no Porto " + uploadPort);
-            ServerSocket listenuploadSocket = new ServerSocket(uploadPort);
-            out.writeInt(listenuploadSocket.getLocalPort());
-            System.out.println("upload SOCKET = " + listenuploadSocket);
-
-            while (true) {
-                Socket uploadSocket = listenuploadSocket.accept(); // BLOQUEANTE
-                System.out.println("Download_Client_SOCKET (created at accept())= " + uploadSocket);
+            while (true)
+            {
+                Socket uploadSocket = listenUploadSocket.accept(); // BLOQUEANTE
+                System.out.println("Upload_Client_SOCKET (created at accept())= " + uploadSocket);
 
                 new UploadConnection(uploadSocket, fileName, userAtual.getFullDirectory());
 
                 System.out.println("[Server Side] - Ficheiro recebido com sucesso!");
-                listenuploadSocket.close();
+                listenUploadSocket.close();
 
                 RespostaServidor respostaServidor = new RespostaServidor("uploadFinish", "Ficheiro enviado com sucesso!");
                 outo.writeObject(respostaServidor);
             }
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             System.out.println("Listen: " + e.getMessage());
         }
 
     }
-
-
 
 
     private synchronized void changePassword(User userAtual) throws Exception
