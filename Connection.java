@@ -19,8 +19,8 @@ class Connection extends Thread {
 
     String configPath = ucServer.rootFolderPath + "\\UsersConfig";
 
-    public Connection(Socket aClientSocket, int numero, ucServer servidorPrimario) {
-        this.thread_number = numero;
+    public Connection(Socket aClientSocket, ucServer servidorPrimario)
+    {
         this.servidorLigado = servidorPrimario;
 
         try {
@@ -87,6 +87,9 @@ class Connection extends Thread {
         }
          */
 
+        System.out.println();
+
+
         login(servidorLigado.usersConnected);
     }
 
@@ -115,7 +118,8 @@ class Connection extends Thread {
 
 
     // Faz a leitura da lista de Users do Ficheiro de Objetos
-    public synchronized List<User> ReadUsersFromFile(String filePath) {
+    public synchronized List<User> ReadUsersFromFile(String filePath)
+    {
         System.out.println("Reading Users from File Config!");
 
         List<User> listUsersRead = null;
@@ -138,7 +142,8 @@ class Connection extends Thread {
         return listUsersRead;
     }
 
-    public synchronized void login(List<String> usersConnected) {
+    public synchronized void login(List<String> usersConnected)
+    {
         List<User> users = new ArrayList<>();
         System.out.println(ucServer.rootFolderPath);
         String configPath = ucServer.rootFolderPath + "\\UsersConfig";
@@ -148,9 +153,11 @@ class Connection extends Thread {
         boolean login = true;
 
         // LOGIN
-        try {
+        try
+        {
             // Continua a fazer até conseguir fazer login
-            while (login) {
+            while (login)
+            {
                 outo.writeObject(new RespostaServidor("LoginUser", "Introduza username: "));
                 String usernameReceived = in.readUTF();
 
@@ -165,7 +172,8 @@ class Connection extends Thread {
                 User foundUser = null;
 
                 // Percorre todos os users à procura do pedido
-                for (User u : users) {
+                for (User u : users)
+                {
                     if (u.getUsername().equals(user.getUsername()) && u.getPassword().equals(user.getPassword())) {
                         // True -> Login com sucesso
                         foundUser = u;
@@ -215,10 +223,12 @@ class Connection extends Thread {
         }
     }
 
-    public synchronized void menu(User user) throws Exception {
+    public synchronized void menu(User user) throws Exception
+    {
 
         // LOOP para ler o comando do cliente
-        while (true) {
+        while (true)
+        {
             System.out.println("[Server Side] - Waiting for commands from " + user.getUsername());
 
             // Apenas lê quando houver algo a ler
