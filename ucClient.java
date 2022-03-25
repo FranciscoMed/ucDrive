@@ -4,7 +4,8 @@ import java.util.*;
 
 public class ucClient
 {
-
+	String primaryServerAddress;
+	String secondaryServerAddress;
 	String localDirectory = System.getProperty("user.dir") + "\\Home";
 
 	public static void main(String args[])
@@ -15,22 +16,77 @@ public class ucClient
 
 		try
 		{
-
-			s = new Socket("localhost", serversocket);
-
 			ucClient localClient = new ucClient();
 
-			System.out.println("SOCKET = " + s);
+			StreamsClass clientStreams;
+			DataInputStream in;
+			ObjectInputStream ino;
+			DataOutputStream out;
+			BufferedReader reader;
+			Scanner myScanner = new Scanner(System.in);
 
-			StreamsClass clientStreams = new StreamsClass(s);
 
-			DataInputStream in = clientStreams.getIn();
-			ObjectInputStream ino = clientStreams.getIno();
-			DataOutputStream out = clientStreams.getOut();
-			BufferedReader reader = clientStreams.getReader();
+			// Verifica se quer fazer o login ou outras coisas locais apenas
+			while(true)
+			{
 
-			// Faz o login do cliente
-			clientLogin(clientStreams);
+				// Imprime menu com Possiveis comandos
+				String menu = "[CLIENT SIDE] - O que deseja fazer ? [Digite o numero apenas!]\n[0] Login  \n[1] Alterar endereços \n[2] Listar Dir Cliente\n[3] Mudar Dir Cliente\n[4] Exit";
+				System.out.println(menu);
+				System.out.print("-- ");
+
+				// Recebe a escolha do cliente e envia para o server
+				String escolha = myScanner.nextLine();
+
+				if (escolha.equals("0"))
+				{
+					// Faz o login do cliente
+
+					System.out.println("FALTA HERE FAZER A LEITURA DA ADDRESS E NÃO SIMPLESMENTE LOCALHOST");
+
+					s = new Socket("localhost", serversocket);
+					System.out.println("SOCKET = " + s);
+
+					clientStreams = new StreamsClass(s);
+					in = clientStreams.getIn();
+					ino = clientStreams.getIno();
+					out = clientStreams.getOut();
+					reader = clientStreams.getReader();
+
+					clientLogin(clientStreams);
+					break;
+				}
+				else if (escolha.equals("1"))
+				{
+					System.out.println("[Client Side] - Operação a ser executada no cliente");
+
+					changeServerRouting(localClient);
+				}
+				else if (escolha.equals("2"))
+				{
+					System.out.println("[Client Side] - Operação a ser executada no cliente");
+
+					File tmp = new File(localClient.localDirectory);
+
+					System.out.print("[Cliente Side] - ");
+					printDirectoryClient(Objects.requireNonNull(tmp.list()), localClient.localDirectory);
+				}
+				else if (escolha.equals("3"))
+				{
+					System.out.println("[Client Side] - Operação a ser executada no cliente");
+					System.out.print("[Cliente Side] - ");
+					changeDirectoryClient(localClient, myScanner);
+				}
+				else if (escolha.equals("4"))
+				{
+					System.out.println("[Client Side] - Terminando...");
+					return;
+				}
+				else
+				{
+					System.out.println("[Client Side] - Valor Incorrecto. Tente novamente!");
+				}
+			}
 
 			while(true)
 			{
@@ -63,7 +119,7 @@ public class ucClient
 				{
 					System.out.println("[Client Side] - Operação a ser executada no cliente");
 					System.out.print("[Cliente Side] - ");
-					changeDirectoryClient(localClient, clientStreams);
+					changeDirectoryClient(localClient, myScanner);
 				}
 				else
 				{
@@ -362,6 +418,16 @@ public class ucClient
     }
 
 
+	// Configurar endereços e portos de servidores primário e secundário
+	private static void changeServerRouting(ucClient localClient)
+	{
+
+		System.out.println("FALTA FAZER A MUDANÇA DO SERVER ROUTING");
+
+
+	}
+
+
 	// Verifica se o numero em formato String, pode ser transformado num INT (os menus são Inteiros)
 	private static boolean isInteger(String s)
 	{
@@ -391,10 +457,8 @@ public class ucClient
 	}
 
 	// Faz o print da lista que recebemos como árvore de diretorias
-	private static void changeDirectoryClient(ucClient thisClient, StreamsClass clientStreams) throws Exception
+	private static void changeDirectoryClient(ucClient thisClient, Scanner myScanner) throws Exception
 	{
-		BufferedReader reader = clientStreams.getReader();
-
 		// Verificamos quais os possíveis destinos
 		String[] listaDiretoria = new File(thisClient.localDirectory).list();
 
@@ -405,7 +469,7 @@ public class ucClient
 		boolean changedDirectory = false;
 		while (!changedDirectory)
 		{
-			String newDirectory = reader.readLine();
+			String newDirectory = myScanner.nextLine();
 
 			if (newDirectory.equals("Back") && !split[split.length - 1].equals("ucDrive"))
 			{
