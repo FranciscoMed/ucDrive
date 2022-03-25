@@ -68,6 +68,8 @@ public class ucClient
 				else
 				{
 					out.writeUTF(escolha);
+					System.out.println("Enviei escolha ao cliente através da " + s);
+
 
 					RespostaServidor respostaServidor = (RespostaServidor) ino.readObject();
 
@@ -146,10 +148,10 @@ public class ucClient
 
 							int port = in.readInt();
 
-							Socket uploadSocket = new Socket("localhost", port);
+							Socket uploadsocket = new Socket("localhost", port);
 
-							System.out.println("[Client Side] - Upload Socket = " + uploadSocket);
-							out = new DataOutputStream(uploadSocket.getOutputStream());
+							System.out.println("[Client Side] - Upload Socket = " + uploadsocket);
+							DataOutputStream outup = new DataOutputStream(uploadsocket.getOutputStream());
 
 							try
 							{
@@ -173,7 +175,7 @@ public class ucClient
 									contents = new byte[size];
 
 									bis.read(contents, 0, size);
-									out.write(contents);
+									outup.write(contents);
 
 									System.out.println("Sending File[" + file.getName() + "] ... " + (current*100)/fileLength + "% done!" );
 								}
@@ -181,7 +183,8 @@ public class ucClient
 								out.flush();
 								bis.close();
 								fis.close();
-								uploadSocket.close();
+								uploadsocket.close();
+
 
 							}
 							catch (IOException e) {
@@ -231,8 +234,8 @@ public class ucClient
 							{
 								System.out.println("Vai escrever para -> " + localClient.localDirectory + "\\" + newFilename);
 
-								int uploadport = in.readInt();
-								s = new Socket("localhost", uploadport);
+								int downloadport = in.readInt();
+								Socket downloadsocket = new Socket("localhost", downloadport);
 
 								System.out.println("SOCKET= " + s );
 
@@ -240,7 +243,7 @@ public class ucClient
 								FileOutputStream fos = new FileOutputStream(localClient.localDirectory + "\\" + newFilename);
 								BufferedOutputStream bos = new BufferedOutputStream(fos);
 
-								InputStream is = s.getInputStream();
+								InputStream is = downloadsocket.getInputStream();
 								int bytesRead = 0;
 
 								while ((bytesRead = is.read(contents)) != -1)
@@ -249,7 +252,7 @@ public class ucClient
 								}
 
 								bos.flush();
-								s.close();
+								downloadsocket.close();
 
 
 								respostaServidor = (RespostaServidor) ino.readObject();

@@ -35,6 +35,8 @@ public class UploadConnection extends Thread {
             }
 
             bos.flush();
+            bos.close();
+            fos.close();
             uploadSocket.close();
 
 

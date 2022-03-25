@@ -224,6 +224,7 @@ class Connection extends Thread {
             // Apenas lê quando houver algo a ler
             String escolhaCliente = in.readUTF();
 
+
             // Verifica que a escolha está dentro dos comandos possíveis
             while (Integer.parseInt(escolhaCliente) < 0 || Integer.parseInt(escolhaCliente) > 8) {
                 System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: Valor Errado (" + escolhaCliente + ") - Tente novamente!");
@@ -295,6 +296,8 @@ class Connection extends Thread {
                     diretoriaAtual = new RespostaDiretorias("ServerDirectory", user.getFullDirectory());
 
                     uploadFile(user, diretoriaAtual);
+
+                    System.out.println("FIM DO Upload NO SERVIDOR !!!!!!!!!!!!!!!!! "); // FALTA APAGAR
 
                     break;
                 case "8":
@@ -414,6 +417,7 @@ class Connection extends Thread {
         catch (IOException e) {
             System.out.println("Listen: " + e.getMessage());
         }
+
 
     }
 
