@@ -31,7 +31,7 @@ public class ucClient
 			{
 
 				// Imprime menu com Possiveis comandos
-				String menu = "[CLIENT SIDE] - O que deseja fazer ? [Digite o numero apenas!]\n[0] Login  \n[1] Alterar endereços \n[2] Listar Dir Cliente\n[3] Mudar Dir Cliente\n[4] Exit";
+				String menu = "[CLIENT SIDE] - O que deseja fazer ? [Digite o numero apenas!]\n[0] Login \n[1] Alterar endereços \n[2] Listar Dir Cliente\n[3] Mudar Dir Cliente\n[4] Exit";
 				System.out.println(menu);
 				System.out.print("-- ");
 
@@ -88,6 +88,9 @@ public class ucClient
 				}
 			}
 
+
+
+			// Passagem para o menu com já opções de online
 			while(true)
 			{
 				// Imprime menu com Possiveis comandos
@@ -423,7 +426,6 @@ public class ucClient
 	{
 
 		System.out.println("FALTA FAZER A MUDANÇA DO SERVER ROUTING");
-
 
 	}
 

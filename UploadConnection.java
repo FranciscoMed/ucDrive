@@ -2,7 +2,8 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class UploadConnection extends Thread {
+public class UploadConnection extends Thread
+{
     String path;
     Socket uploadSocket;
     String filename;

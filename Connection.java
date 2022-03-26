@@ -39,7 +39,8 @@ class Connection extends Thread {
     }
 
     //=============================
-    public synchronized void run() {
+    public synchronized void run()
+    {
 
         System.out.println("Root Folder Path > " + ucServer.rootFolderPath);
 
@@ -94,7 +95,8 @@ class Connection extends Thread {
     }
 
     // Faz a escrita da lista de Users do Ficheiro de Objetos
-    public synchronized void WriteUsersToFile(List<User> listUsers, String filePath) {
+    public synchronized void WriteUsersToFile(List<User> listUsers, String filePath)
+    {
         System.out.println("Writing all Users to File!");
 
         try {
