@@ -1,10 +1,9 @@
 import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+import java.net.*;
+import java.util.*;
 
-class Connection extends Thread {
+class Connection extends Thread
+{
     DataOutputStream out;
     DataInputStream in;
     ObjectOutputStream outo;
@@ -90,27 +89,29 @@ class Connection extends Thread {
 
         System.out.println();
 
-
+        // Faz o login do user e passa para o menu
         login(servidorLigado.usersConnected);
     }
 
     // Faz a escrita da lista de Users do Ficheiro de Objetos
     public synchronized void WriteUsersToFile(List<User> listUsers, String filePath)
     {
-        System.out.println("Writing all Users to File!");
+        System.out.println("[TCP Server] - Writing all Users to File!");
 
-        try {
+        try
+        {
             FileOutputStream fileOut = new FileOutputStream(filePath);
             ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
             objectOut.writeObject(listUsers);
 
-            for (User u : listUsers) {
+            for (User u : listUsers)
+            {
                 System.out.println(u.toString());
             }
 
             objectOut.close();
 
-            System.out.println("Users foram escritos para o ficheiro!");
+            System.out.println("[TCP Server] - Users foram escritos para o ficheiro!");
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -118,32 +119,36 @@ class Connection extends Thread {
 
     }
 
-
     // Faz a leitura da lista de Users do Ficheiro de Objetos
     public synchronized List<User> ReadUsersFromFile(String filePath)
     {
-        System.out.println("Reading Users from File Config!");
+        System.out.println("[TCP Server] - Reading Users from File Config!");
 
         List<User> listUsersRead = null;
 
-        try {
+        try
+        {
             FileInputStream fileIn = new FileInputStream(filePath);
             ObjectInputStream objectIn = new ObjectInputStream(fileIn);
             listUsersRead = (List<User>) objectIn.readObject();
             objectIn.close();
 
 
-            for (User u : listUsersRead) {
+            for (User u : listUsersRead)
+            {
                 System.out.println(u.toString());
             }
 
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             e.printStackTrace();
         }
 
         return listUsersRead;
     }
 
+    // Faz o Login do User e passa para o menu
     public synchronized void login(List<String> usersConnected)
     {
         List<User> users = new ArrayList<>();
@@ -196,12 +201,12 @@ class Connection extends Thread {
                     if (userAlreadyConnected) {
                         // False -> Falha no login
                         outo.writeObject(new RespostaLogin(false, null));
-                        System.out.println("[Server Side] - User já logado - Enviei falha");
+                        System.out.println("[TCP Server] - User já logado - Enviei falha");
                     } else {
                         // True -> Login com sucesso
                         usersConnected.add(foundUser.getUsername());
                         outo.writeObject(new RespostaLogin(true, foundUser.getDirectory()));
-                        System.out.println("[Server Side] - Enviei confirmação");
+                        System.out.println("[TCP Server] - Enviei confirmação");
                         login = false;
 
                         this.userDirectory = foundUser.getDirectory();
@@ -212,16 +217,22 @@ class Connection extends Thread {
                 } else {
                     // False -> Falha no login
                     outo.writeObject(new RespostaLogin(false, null));
-                    System.out.println("[Server Side] - Enviei falha");
+                    System.out.println("[TCP Server] - Enviei falha");
                 }
             }
 
-        } catch (EOFException e) {
-            System.out.println("EOF:" + e);
+        }
+        catch (EOFException e)
+        {
+            System.out.println("EOF:" + e.getMessage());
             removeLoggedUser(servidorLigado,user);
-        } catch (IOException e) {
+        }
+        catch (IOException e)
+        {
             removeLoggedUser(servidorLigado,user);
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             e.printStackTrace();
             removeLoggedUser(servidorLigado,user);
         }
@@ -233,7 +244,7 @@ class Connection extends Thread {
         // LOOP para ler o comando do cliente
         while (true)
         {
-            System.out.println("[Server Side] - Waiting for commands from " + user.getUsername());
+            System.out.println("[TCP Server] - Waiting for commands from " + user.getUsername());
 
             // Apenas lê quando houver algo a ler
             String escolhaCliente = in.readUTF();
@@ -279,7 +290,7 @@ class Connection extends Thread {
                     // Mudar Dir Servidor
                     System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [3] > Mudar Dir Servidor");
 
-                    outo.writeObject(new RespostaServidor("ChangeDir", "A diretoria atual do User[" + user.getUsername() + "] no servidor é: " + user.getDirectory() + "!\nIntroduza a nova diretoria ou [Back] para voltar atrás!"));
+                    outo.writeObject(new RespostaServidor("ChangeDir", "A diretoria atual do User[" + user.getUsername() + "] no servidor é: " + user.getDirectory() + "!\nIntroduza a nova diretoria, [Back] para voltar atrás ou [Cancel] para cancelar a operação!"));
                     changeUserDirectory(user);
 
                     break;
@@ -305,7 +316,7 @@ class Connection extends Thread {
 
                     RespostaServidor respostaServidor = new RespostaServidor("upFile", "Carregar para >> " + user.getFullDirectory());
                     outo.writeObject(respostaServidor);
-                    System.out.println("[Server Side] - Enviei upFile");
+                    System.out.println("[TCP Server] - Enviei upFile");
                     diretoriaAtual = new RespostaDiretorias("ServerDirectory", user.getFullDirectory());
 
                     uploadFile(user, diretoriaAtual);
@@ -351,7 +362,7 @@ class Connection extends Thread {
             }
 
             if (!foundFileOnDirectory) {
-                System.out.println("[Server Side] - File[" + fileName + "] não existe ou não pode ser descarregado.");
+                System.out.println("[TCP Server] - File[" + fileName + "] não existe ou não pode ser descarregado.");
                 RespostaServidor respostaServidor = new RespostaServidor("RepeatFile", "Ficheiro não pode ser descarregado. Introduza novo nome!");
                 outo.writeObject(respostaServidor);
 
@@ -368,7 +379,7 @@ class Connection extends Thread {
         // Cria Socket independente para Download do ficheiro
 
         int downloadPort = 0;
-        System.out.println("[Server Side] - Download Socket no Porto " + downloadPort);
+        System.out.println("[TCP Server] - Download Socket no Porto " + downloadPort);
         ServerSocket listenDownloadSocket = new ServerSocket(downloadPort);
         out.writeInt(listenDownloadSocket.getLocalPort());
         System.out.println("Download SOCKET = " + listenDownloadSocket);
@@ -380,7 +391,7 @@ class Connection extends Thread {
 
             new DownloadConnection(downloadSocket, fullFilePath);
 
-            System.out.println("[Server Side] - Ficheiro recebido com sucesso!");
+            System.out.println("[TCP Server] - Ficheiro recebido com sucesso!");
             listenDownloadSocket.close();
 
             respostaServidor = new RespostaServidor("DownloadFinish", "Ficheiro enviado com sucesso!");
@@ -398,7 +409,7 @@ class Connection extends Thread {
 
 
         ServerSocket listenUploadSocket = new ServerSocket(0);
-        System.out.println("[Server Side] - Download Socket no Porto " + listenUploadSocket.getLocalPort());
+        System.out.println("[TCP Server] - Download Socket no Porto " + listenUploadSocket.getLocalPort());
         out.writeInt(listenUploadSocket.getLocalPort());
         System.out.println("Upload SOCKET Listening = " + listenUploadSocket);
 
@@ -411,7 +422,7 @@ class Connection extends Thread {
 
             new UploadConnection(uploadSocket, fileName, userAtual.getFullDirectory());
 
-            System.out.println("[Server Side] - Ficheiro recebido com sucesso!");
+            System.out.println("[TCP Server] - Ficheiro recebido com sucesso!");
             listenUploadSocket.close();
 
             RespostaServidor respostaServidor = new RespostaServidor("uploadFinish", "Ficheiro enviado com sucesso!");
@@ -459,7 +470,7 @@ class Connection extends Thread {
         {
             if (u2.equals(userAtual.getUsername()))
             {
-                System.out.println("[Server Side] - Removeu User(" + u2 + ") da lista de ligações.");
+                System.out.println("[TCP Server] - Removeu User(" + u2 + ") da lista de ligações.");
                 servidorLigado.usersConnected.remove((String) u2);
                 break;
             }
@@ -475,7 +486,6 @@ class Connection extends Thread {
     {
         String userDirectory = userAtual.getFullDirectory();
         String shortDirectory = userAtual.getDirectory();
-        System.out.println("thisDir: " + userDirectory);
 
         String[] split = userDirectory.split("\\\\");
 
@@ -488,12 +498,20 @@ class Connection extends Thread {
         {
             inputDir = in.readUTF();
 
+            // Bloqueia para que o user só aceda ao que tem permissão (tudo dentro da sua própria pasta)
             if (inputDir.equals("Back") && split[split.length - 1].equals(userAtual.getUsername()))
             {
-                System.out.println("[Server Side] - User[" + userAtual.getUsername() + "] não tem permissões para aceder à pasta " + split[split.length - 1]);
+                System.out.println("[TCP Server] - User[" + userAtual.getUsername() + "] não tem permissões para aceder à pasta " + split[split.length - 1]);
                 RespostaServidor respostaServidor = new RespostaServidor("RepeatDir", "Não tem acesso a essa pasta. Introduza novo caminho!");
                 outo.writeObject(respostaServidor);
             }
+            // Termina a mudança de Diretoria no servidor
+            else if (inputDir.equals("Cancel"))
+            {
+                outo.writeObject(new RespostaServidor("YesDir", "Recebemos o Cancel! Poderá sair!"));
+                return;
+            }
+            // Faz o recuo da Diretoria do user
             else if (inputDir.equals("Back") && !split[split.length - 1].equals(userAtual.getUsername()))
             {
                 inputDir = split[0];
@@ -530,7 +548,7 @@ class Connection extends Thread {
                 if (!changedDirectory)
                 {
                     String textoResposta = "A diretoria " + inputDir + " não existe dentro da diretoria atual " + split[split.length - 1] + "ou não é uma pasta. Utilize uma das possíveis!";
-                    System.out.println("[Server Side] - " + textoResposta);
+                    System.out.println("[TCP Server] - " + textoResposta);
                     RespostaServidor respostaServidor = new RespostaServidor("WrongDir", textoResposta);
                     outo.writeObject(respostaServidor);
                     outo.writeObject(new RespostaDiretorias("ServerDir", userDirectory));
@@ -539,7 +557,7 @@ class Connection extends Thread {
         }
 
         String textoResposta = "A diretoria do user[" + userAtual.getUsername() + "] mudou para " + userAtual.getDirectory() + "!";
-        System.out.println("[Server Side] - " + textoResposta);
+        System.out.println("[TCP Server] - " + textoResposta);
         outo.writeObject(new RespostaServidor("YesDir", textoResposta));
 
         // Vai à lista de Users e altera a diretoria, escrevendo de novo no ficheiro objeto a nova diretoria
@@ -558,25 +576,21 @@ class Connection extends Thread {
         }
 
         WriteUsersToFile(users, configPath);
-
     }
 
+
+    // Remove o User da lista de users conectados num certo servidor!
     private synchronized void removeLoggedUser(ucServer servidorLigado, User user)
     {
         // remove o user da lista de ligações
-        for (String u2 : servidorLigado.usersConnected) {
-            if (u2.equals(user.getUsername())) {
-                System.out.println("[Server Side] - Removeu User(" + u2 + ") da lista de ligações.");
+        for (String u2 : servidorLigado.usersConnected)
+        {
+            if (u2.equals(user.getUsername()))
+            {
+                System.out.println("[TCP Server] - Removeu User(" + u2 + ") da lista de ligações.");
                 servidorLigado.usersConnected.remove((String) u2);
                 break;
             }
         }
-
-
-        /*try {
-            clientSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
     }
 }

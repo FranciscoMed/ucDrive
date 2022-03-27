@@ -1,7 +1,3 @@
-
-
-
-import javax.xml.crypto.Data;
 import java.net.*;
 import java.io.*;
 import java.util.*;
@@ -23,17 +19,18 @@ public class ucServer extends Thread
         this.ServerPort = serverPort;
     }
 
-    public ServerSocket getListenSocket() {
+    public ServerSocket getListenSocket()
+    {
         return listenSocket;
     }
 
     public static synchronized void main(String args[]) throws Exception
     {
         // o True serve para dizer que é o Primary Server, a false seria o secundario.
-        
+
 
         String configPathManual = ucServer.rootFolderPath + "\\ServerConfig";
-        int  heartbeat, primaryPort = 0, failbeat, secondaryPort = 0;
+        int  heartbeat = 0, primaryPort = 0, failbeat = 0, secondaryPort = 0;
 
         try
         {
@@ -95,20 +92,20 @@ public class ucServer extends Thread
         {
             public void run()
             {
-                try {
-                    udpRunningThread(servidorAtual, firstPort, secondPort);
-                }
-                finally
+                try
                 {
-                    System.out.println("Closing UDP server");
+                    udpRunningThread(servidorAtual, firstPort);
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
                 }
             }
         };
 
 
-        isPrimary(servidorAtual, firstPort);
         // Faz a verificação de qual servidor será o primário
-
+        isPrimary(servidorAtual, firstPort);
 
         if (servidorAtual.isPrimary)
         {
@@ -116,6 +113,7 @@ public class ucServer extends Thread
 
             System.out.println("[Server Side] - Launch UDP");
             udpThread.start();
+
             System.out.println("[Server Side] - Launch TCP");
             tcpThread.start();
 
@@ -124,11 +122,92 @@ public class ucServer extends Thread
         {
             System.out.println("[Server Side] - Sou o Servidor Secundário!");
             udpThread.start();
-            System.out.println("---------------- 123  secundario -----------------");
-            System.out.println("CHEGO AQUUUUUUUUUUUUUI 123");
-        }
 
-        System.out.println("FIM DE TUDO !!! ");
+            try {
+                udpThread.join();
+
+                System.out.println("AFTER JOIN");
+                restartServer(servidorAtual.ServerPort, heartbeat, failbeat, configPathManual);
+            }catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
+    private static void restartServer(int serverPort, int heartbeat, int failbeat, String configPathManual) throws Exception
+    {
+        ucServer servidorAtual = new ucServer(7000);
+
+        // Thread para TCP
+        Thread tcpThread = new Thread()
+        {
+            public void run()
+            {
+                try
+                {
+                    tcpRunningThread(servidorAtual, serverPort);
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+                finally
+                {
+                    System.out.println("Closing TCP server");
+                }
+            }
+        };
+
+        // Thread para UDP
+        Thread udpThread = new Thread()
+        {
+            public void run()
+            {
+                try
+                {
+                    udpRunningThread(servidorAtual, serverPort);
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+
+        // Faz a verificação de qual servidor será o primário
+        isPrimary(servidorAtual, serverPort);
+
+        if (servidorAtual.isPrimary)
+        {
+            System.out.println("[Server Side] - Sou o Servidor Primário!");
+
+            System.out.println("[Server Side] - Launch UDP");
+            udpThread.start();
+
+            System.out.println("[Server Side] - Launch TCP");
+            tcpThread.start();
+
+        }
+        else
+        {
+            System.out.println("[Server Side] - Sou o Servidor Secundário!");
+            udpThread.start();
+
+            try
+            {
+                udpThread.join();
+
+                System.out.println("AFTER JOIN");
+                restartServer(servidorAtual.ServerPort, heartbeat, failbeat, configPathManual);
+            }catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+
+        }
     }
 
     // Retorna o Socket de ligação ao Servidor ou então que é o Segundo Servidor
@@ -171,13 +250,13 @@ public class ucServer extends Thread
             ServerSocket thisSocket = thisServer.getListenSocket();
 
             thisServer.isPrimary = true;
-            System.out.println("Root Folder Directory = " + rootFolderPath);
-            System.out.println("Users Folder Directory = " + usersFolderPath);
+            System.out.println("[TCP Server] - Root Folder Directory = " + rootFolderPath);
+            System.out.println("[TCP Server] - Users Folder Directory = " + usersFolderPath);
 
             while(true)
             {
                 Socket clientSocket = thisSocket.accept(); // BLOQUEANTE
-                System.out.println("CLIENT_SOCKET (created at accept())= " + clientSocket);
+                System.out.println("[TCP CONNECTION] - CLIENT_SOCKET (created at accept())= " + clientSocket);
                 new Connection(clientSocket, thisServer);
             }
         }
@@ -188,11 +267,8 @@ public class ucServer extends Thread
     }
 
     // Thread das comunicaçõs UDP entre os servidores
-    public static void udpRunningThread(ucServer thisServer, int firstPort, int secondPort)
+    public static void udpRunningThread(ucServer thisServer, int firstPort)
     {
-        System.out.println("Root Folder Directory = " + rootFolderPath);
-        System.out.println("Users Folder Directory = " + usersFolderPath);
-
         if (thisServer.isPrimary)
         {
             // SERVIDOR PRIMÁRIO
@@ -209,19 +285,18 @@ public class ucServer extends Thread
                     // Cria o DatagramPacket que receberá os dados
                     DpReceive = new DatagramPacket(receive, receive.length);
 
-
-                    System.out.println(" ----- before received ----- ");
                     // Recebe os dados
                     udpSocket.receive(DpReceive);
-                    System.out.println("[Server Side] - Recebemos: " + data(receive));
+                    System.out.println("[UDP CONNECTION] - Recebemos: " + data(receive));
 
+                    // Envia o ping de volta!
                     udpSocket.send(DpReceive);
-
-
+                    // Limpa o buffer
                     receive = new byte[65535];
                 }
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 e.printStackTrace();
             }
         }
@@ -254,29 +329,29 @@ public class ucServer extends Thread
                         byte[] receive = new byte[65535];
                         DatagramPacket DpReceived = new DatagramPacket(receive, receive.length);
                         udpSocket.receive(DpReceived);
-                        System.out.println("[Server Secundário] - Recebemos: " + data(receive));
+                        System.out.println("[UDP CONNECTION] - Recebemos: " + data(receive));
                         receive = new byte[65535];
                         contadorFalhas = 0;
                     }
                     catch (SocketTimeoutException ste)
                     {
                         contadorFalhas = contadorFalhas + 1;
-                        System.out.println("TIMEOUT NO SOCKET ?");
+                        System.out.println("[UDP CONNECTION] - Não recebemos resposta. Falha [" + contadorFalhas + "]");
                     }
 
-                    if (contadorFalhas >= 5) // FALTA MUDAR PARA VARIAVEL DO CONFIG
+                    if (contadorFalhas >= 1) // FALTA MUDAR PARA VARIAVEL DO CONFIG
                     {
                         udpSocket.close();
-                        System.out.println("TENTA ASSUMIR AQUI COMO SERVIDOR PRINCIPAL");
-
-                        System.out.println(isPrimary(thisServer, firstPort));
+                        System.out.println("[UDP CONNECTION] - Demasiadas falhas seguidas. Irá assumir como servidor principal!");
                         return;
                     }
 
+                    // Faz sleep do tempo suposto entre envios
                     sleep(10000); // FALTA MUDAR PARA VARIAVEL DO CONFIG
                 }
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 e.printStackTrace();
             }
         }

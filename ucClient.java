@@ -8,7 +8,7 @@ public class ucClient
 	int serversocketport = 7000;
 	String localDirectory = System.getProperty("user.dir") + "\\Home";
 
-	public static void main(String args[])
+	public static void main(String[] args)
 	{
 		ucClient localClient = new ucClient();
 
@@ -176,7 +176,8 @@ public class ucClient
 					}
 
 					// Trabalha os comandos - MENU !!
-					switch (respostaServidor.getResposta()) {
+					switch (respostaServidor.getResposta())
+					{
 						default:
 							System.out.println("DEFAULT - FALTA TRATAR ISTO - Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
 							return false;
@@ -232,49 +233,42 @@ public class ucClient
 							BufferedInputStream bis = new BufferedInputStream(fis);
 
 							int port = in.readInt();
-
 							Socket uploadsocket = new Socket("localhost", port);
 
 							System.out.println("[Client Side] - Upload Socket = " + uploadsocket);
 							DataOutputStream outup = new DataOutputStream(uploadsocket.getOutputStream());
 
-							try
+
+							// Envio do ficheiro faseadamente para o Servidor
+							byte[] contents;
+							long fileLength = file.length();
+							long current = 0;
+
+							while (current != fileLength)
 							{
-								byte[] contents;
-								long fileLength = file.length();
-								long current = 0;
-
-								while (current != fileLength)
+								int size = 10000;
+								if (fileLength - current >= size)
 								{
-									int size = 10000;
-									if (fileLength - current >= size)
-									{
-										current = current + size;
-									}
-									else
-									{
-										size = (int) (fileLength - current);
-										current = fileLength;
-									}
-
-									contents = new byte[size];
-
-									bis.read(contents, 0, size);
-									outup.write(contents);
-
-									System.out.println("Sending File[" + file.getName() + "] ... " + (current*100)/fileLength + "% done!" );
+									current = current + size;
+								}
+								else
+								{
+									size = (int) (fileLength - current);
+									current = fileLength;
 								}
 
-								out.flush();
-								bis.close();
-								fis.close();
-								uploadsocket.close();
+								contents = new byte[size];
 
+								bis.read(contents, 0, size);
+								outup.write(contents);
 
+								System.out.println("Sending File[" + file.getName() + "] ... " + (current*100)/fileLength + "% done!" );
 							}
-							catch (IOException e) {
-								e.printStackTrace();
-							}
+
+							out.flush();
+							bis.close();
+							fis.close();
+							uploadsocket.close();
 
 							respostaServidor = (RespostaServidor) ino.readObject();
 							if (respostaServidor.getResposta().equals("uploadFinish"))
@@ -284,10 +278,7 @@ public class ucClient
 							}else {
 								System.out.println("Erro a enviar o ficheiro");
 							}
-
 							break;
-
-
 
 						// Descarregar o ficheiro
 						case "ChooseFile":
@@ -324,7 +315,7 @@ public class ucClient
 
 								System.out.println("SOCKET= " + s );
 
-								byte[] contents = new byte[10000];
+								contents = new byte[10000];
 								FileOutputStream fos = new FileOutputStream(localClient.localDirectory + "\\" + newFilename);
 								BufferedOutputStream bos = new BufferedOutputStream(fos);
 
@@ -425,7 +416,8 @@ public class ucClient
 
 
 		}
-		catch (IOException e) {
+		catch (IOException e)
+		{
 			System.out.println("A conexão foi perdida com o servidor!");
 			return true;
 		}
