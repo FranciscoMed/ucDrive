@@ -4,11 +4,7 @@
 import javax.xml.crypto.Data;
 import java.net.*;
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.security.spec.RSAOtherPrimeInfo;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeoutException;
+import java.util.*;
 
 
 public class ucServer extends Thread
@@ -65,7 +61,8 @@ public class ucServer extends Thread
                 }
             }
         }
-        catch (IOException e) {
+        catch (IOException e)
+        {
             e.printStackTrace();
         }
         int firstPort = primaryPort;
@@ -101,14 +98,12 @@ public class ucServer extends Thread
                 try {
                     udpRunningThread(servidorAtual, firstPort, secondPort);
                 }
-                finally {
-                    System.out.println("Closing TCP server");
+                finally
+                {
+                    System.out.println("Closing UDP server");
                 }
             }
         };
-
-
-
 
 
         isPrimary(servidorAtual, firstPort);
@@ -120,7 +115,7 @@ public class ucServer extends Thread
             System.out.println("[Server Side] - Sou o Servidor Primário!");
 
             System.out.println("[Server Side] - Launch UDP");
-            //udpThread.start();
+            udpThread.start();
             System.out.println("[Server Side] - Launch TCP");
             tcpThread.start();
 
@@ -129,16 +124,12 @@ public class ucServer extends Thread
         {
             System.out.println("[Server Side] - Sou o Servidor Secundário!");
             udpThread.start();
-            tcpThread.start();
-
+            System.out.println("---------------- 123  secundario -----------------");
             System.out.println("CHEGO AQUUUUUUUUUUUUUI 123");
         }
 
-
-
+        System.out.println("FIM DE TUDO !!! ");
     }
-
-
 
     // Retorna o Socket de ligação ao Servidor ou então que é o Segundo Servidor
     private static synchronized boolean isPrimary(ucServer thisServer, int port) throws Exception
@@ -197,8 +188,11 @@ public class ucServer extends Thread
     }
 
     // Thread das comunicaçõs UDP entre os servidores
-    public static synchronized void udpRunningThread(ucServer thisServer, int firstPort, int secondPort)
+    public static void udpRunningThread(ucServer thisServer, int firstPort, int secondPort)
     {
+        System.out.println("Root Folder Directory = " + rootFolderPath);
+        System.out.println("Users Folder Directory = " + usersFolderPath);
+
         if (thisServer.isPrimary)
         {
             // SERVIDOR PRIMÁRIO

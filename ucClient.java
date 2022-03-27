@@ -10,21 +10,18 @@ public class ucClient
 
 	public static void main(String args[])
 	{
-
-
-
 		ucClient localClient = new ucClient();
 
-		while(menuCliente(localClient));
 
+		// Percorre o menu cliente sempre, até ser fechado pelo próprio cliente
+		while(menuCliente(localClient));
     }
 
-	private static boolean menuCliente(ucClient localClient){
+	private static boolean menuCliente(ucClient localClient)
+	{
 		Socket s = null;
 		try
 		{
-
-
 			StreamsClass clientStreams;
 			DataInputStream in;
 			ObjectInputStream ino;
@@ -47,22 +44,26 @@ public class ucClient
 				if (escolha.equals("0"))
 				{
 					// Faz o login do cliente
-
 					boolean errorexist = false;
-					try {
+					try
+					{
 						s = new Socket(localClient.primaryServerAddress, localClient.serversocketport);
 					}
-					catch (UnknownHostException uhe){
+					catch (UnknownHostException uhe)
+					{
 						System.out.println("[CLIENT SIDE] - Este Host não existe: " + localClient.primaryServerAddress);
 						System.out.println("[CLIENT SIDE] - Tem que mudar o endereço");
 						errorexist = true;
-					}catch (IOException ioe){
+					}
+					catch (IOException ioe)
+					{
 						System.out.println("[CLIENT SIDE] - Conexao recusada no Port: " + localClient.serversocketport + " no Endereço: "+ localClient.primaryServerAddress);
 						System.out.println("[CLIENT SIDE] - Verifique os dados de ligação ao Servidor");
 						errorexist = true;
 					}
 
-					if(!errorexist) {
+					if(!errorexist)
+					{
 						System.out.println("SOCKET = " + s);
 
 						clientStreams = new StreamsClass(s);
@@ -74,23 +75,20 @@ public class ucClient
 						clientLogin(clientStreams);
 						break;
 					}
-
-
 				}
 				else if (escolha.equals("1"))
 				{
 					System.out.println("[Client Side] - Operação a ser executada no cliente");
-
 					changeServerRouting(localClient, myScanner);
+
 				}
 				else if (escolha.equals("2"))
 				{
 					System.out.println("[Client Side] - Operação a ser executada no cliente");
-
 					File tmp = new File(localClient.localDirectory);
-
 					System.out.print("[Cliente Side] - ");
 					printDirectoryClient(Objects.requireNonNull(tmp.list()), localClient.localDirectory);
+
 				}
 				else if (escolha.equals("3"))
 				{
@@ -217,14 +215,11 @@ public class ucClient
 									}
 								}
 
-
 								if (!foundFileOnDirectory)
 								{
 									System.out.println("[Client Side] - File[" + upFile + "] não existe ou não pode ser descarregado.");
-
 									System.out.println("[Client Side] - Escolha o ficheiro a dar upload ou Cancel para cancelar a operação");
 									upFile = reader.readLine();
-
 								}
 
 							}
@@ -448,6 +443,7 @@ public class ucClient
 		}
 	}
 	// Configurar endereços e portos de servidores primário e secundário
+
 	private static void changeServerRouting(ucClient localClient, Scanner myScanner)
 	{
 
@@ -480,7 +476,6 @@ public class ucClient
 		}
 
 	}
-
 
 	// Verifica se o numero em formato String, pode ser transformado num INT (os menus são Inteiros)
 	private static boolean isInteger(String s)
