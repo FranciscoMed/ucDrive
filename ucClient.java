@@ -4,19 +4,26 @@ import java.util.*;
 
 public class ucClient
 {
-	String primaryServerAddress;
-	String secondaryServerAddress;
+	String primaryServerAddress = "localhost";
+	int serversocketport = 7000;
 	String localDirectory = System.getProperty("user.dir") + "\\Home";
 
 	public static void main(String args[])
 	{
 
-		Socket s = null;
-		int serversocket = 7000;
 
+
+		ucClient localClient = new ucClient();
+
+		while(menuCliente(localClient));
+
+    }
+
+	private static boolean menuCliente(ucClient localClient){
+		Socket s = null;
 		try
 		{
-			ucClient localClient = new ucClient();
+
 
 			StreamsClass clientStreams;
 			DataInputStream in;
@@ -24,7 +31,6 @@ public class ucClient
 			DataOutputStream out;
 			BufferedReader reader;
 			Scanner myScanner = new Scanner(System.in);
-
 
 			// Verifica se quer fazer o login ou outras coisas locais apenas
 			while(true)
@@ -42,25 +48,40 @@ public class ucClient
 				{
 					// Faz o login do cliente
 
-					System.out.println("FALTA HERE FAZER A LEITURA DA ADDRESS E NÃO SIMPLESMENTE LOCALHOST");
+					boolean errorexist = false;
+					try {
+						s = new Socket(localClient.primaryServerAddress, localClient.serversocketport);
+					}
+					catch (UnknownHostException uhe){
+						System.out.println("[CLIENT SIDE] - Este Host não existe: " + localClient.primaryServerAddress);
+						System.out.println("[CLIENT SIDE] - Tem que mudar o endereço");
+						errorexist = true;
+					}catch (IOException ioe){
+						System.out.println("[CLIENT SIDE] - Conexao recusada no Port: " + localClient.serversocketport + " no Endereço: "+ localClient.primaryServerAddress);
+						System.out.println("[CLIENT SIDE] - Verifique os dados de ligação ao Servidor");
+						errorexist = true;
+					}
 
-					s = new Socket("localhost", serversocket);
-					System.out.println("SOCKET = " + s);
+					if(!errorexist) {
+						System.out.println("SOCKET = " + s);
 
-					clientStreams = new StreamsClass(s);
-					in = clientStreams.getIn();
-					ino = clientStreams.getIno();
-					out = clientStreams.getOut();
-					reader = clientStreams.getReader();
+						clientStreams = new StreamsClass(s);
+						in = clientStreams.getIn();
+						ino = clientStreams.getIno();
+						out = clientStreams.getOut();
+						reader = clientStreams.getReader();
 
-					clientLogin(clientStreams);
-					break;
+						clientLogin(clientStreams);
+						break;
+					}
+
+
 				}
 				else if (escolha.equals("1"))
 				{
 					System.out.println("[Client Side] - Operação a ser executada no cliente");
 
-					changeServerRouting(localClient);
+					changeServerRouting(localClient, myScanner);
 				}
 				else if (escolha.equals("2"))
 				{
@@ -80,7 +101,7 @@ public class ucClient
 				else if (escolha.equals("4"))
 				{
 					System.out.println("[Client Side] - Terminando...");
-					return;
+					return false;
 				}
 				else
 				{
@@ -108,8 +129,18 @@ public class ucClient
 					System.out.print("-- ");
 					escolha = reader.readLine();
 				}
+				if(escolha.equals("1"))
+				{
+					System.out.println("[Client Side] - Operação a ser executada no cliente");
+					changeServerRouting(localClient, myScanner);
+					escolha = "8";
+					out.writeUTF(escolha);
+					RespostaServidor respostaServidor = (RespostaServidor) ino.readObject();
+					System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
 
-				if (escolha.equals("4"))
+					return true;
+				}
+				else if (escolha.equals("4"))
 				{
 					System.out.println("[Client Side] - Operação a ser executada no cliente");
 
@@ -150,7 +181,7 @@ public class ucClient
 					switch (respostaServidor.getResposta()) {
 						default:
 							System.out.println("DEFAULT - FALTA TRATAR ISTO - Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
-							return;
+							return false;
 
 
 						// Carregar Ficheiro
@@ -392,40 +423,61 @@ public class ucClient
 							break;
 						case "EXIT":
 							System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
-							return;
+							return false;
 					}
 				}
 			}
 
-		}
-		catch (UnknownHostException e) {
-			System.out.println("Socket:" + e.getMessage());
-		}
-		catch (EOFException e) {
-			System.out.println("EOF:" + e.getMessage());
+
 		}
 		catch (IOException e) {
-			System.out.println("IO:" + e.getMessage());
+			System.out.println("A conexão foi perdida com o servidor!");
+			return true;
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			System.out.println("A conexão foi perdida com o seguinte erro: " + e.getMessage());
+			return true;
 		}
 		finally {
 			if (s != null)
-			try {
-				s.close();
-			} catch (IOException e) {
-				System.out.println("close:" + e.getMessage());
-			}
+				try {
+					s.close();
+				} catch (IOException e) {
+					System.out.println("close:" + e.getMessage());
+				}
 		}
-    }
-
-
+	}
 	// Configurar endereços e portos de servidores primário e secundário
-	private static void changeServerRouting(ucClient localClient)
+	private static void changeServerRouting(ucClient localClient, Scanner myScanner)
 	{
 
-		System.out.println("FALTA FAZER A MUDANÇA DO SERVER ROUTING");
+
+
+		System.out.println("[Client Side] > " + "Mudar Endereço e Port de Servidor");
+
+		System.out.println("[Client Side] > " + "[0] Endereço");
+		System.out.println("[Client Side] > " + "[1] Port");
+		String escolha = myScanner.nextLine();
+		while(!isInteger(escolha) || (!escolha.equals("0") && !escolha.equals("1")))
+		{
+			System.out.println("Valor incorrecto.Introduza novamente:\n[0] Alterar PW  \n[1] Alterar endereços");
+			System.out.print("-- ");
+			escolha = myScanner.nextLine();
+		}
+		if(escolha.equals("0"))
+		{
+			System.out.println("[Client Side] > " + "O enderenço atual é: " + localClient.primaryServerAddress);
+			System.out.println("[Client Side] > " + "Escreva o Endereço pretendido:");
+			localClient.primaryServerAddress = myScanner.nextLine();
+			System.out.println("[Client Side] > " + "Alterado com sucesso");
+		}
+		else
+		{
+			System.out.println("[Client Side] > " + "O ederenço atual é: " + localClient.serversocketport);
+			System.out.println("[Client Side] > " + "Escreva o Port pretendido:");
+			localClient.serversocketport = Integer.parseInt(myScanner.nextLine());
+			System.out.println("[Client Side] > " + "Alterado com sucesso");
+		}
 
 	}
 
@@ -473,7 +525,7 @@ public class ucClient
 		{
 			String newDirectory = myScanner.nextLine();
 
-			if (newDirectory.equals("Back") && !split[split.length - 1].equals("ucDrive"))
+			if (newDirectory.equals("Back") && !split[split.length - 1].equals("Home"))
 			{
 				split = thisClient.localDirectory.split("\\\\");
 				newDirectory = split[0];
@@ -527,39 +579,38 @@ public class ucClient
 		BufferedReader reader = clientStreams.getReader();
 
 		// Repete login até dar um combo certo
+
+
 		while(true)
 		{
-			try
+			RespostaServidor respostaServidor = (RespostaServidor) ino.readObject();
+			System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+			String name = reader.readLine();
+			out.writeUTF(name);
+
+			respostaServidor = (RespostaServidor) ino.readObject();
+			System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
+			String pass = reader.readLine();
+			out.writeUTF(pass);
+
+
+			RespostaLogin respostaLogin = (RespostaLogin) ino.readObject();
+			// System.out.println("[CLIENT SIDE] -> " + respostaLogin.toString());
+
+			boolean login = (Boolean) respostaLogin.getResposta();
+			if (login)
 			{
-				RespostaServidor respostaServidor = (RespostaServidor) ino.readObject();
-				System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
-				String name = reader.readLine();
-				out.writeUTF(name);
+				String diretoriaAtual = (String) respostaLogin.getDirectoryAtual();
+				System.out.println("[CLIENT SIDE] LOGIN COM SUCESSO!");
 
-				respostaServidor = (RespostaServidor) ino.readObject();
-				System.out.println("Recebeu do servidor > " + respostaServidor.getMensagemCompleta());
-				String pass = reader.readLine();
-				out.writeUTF(pass);
-
-
-				RespostaLogin respostaLogin = (RespostaLogin) ino.readObject();
-				// System.out.println("[CLIENT SIDE] -> " + respostaLogin.toString());
-
-				boolean login = (Boolean) respostaLogin.getResposta();
-				if (login)
-				{
-					String diretoriaAtual = (String) respostaLogin.getDirectoryAtual();
-					System.out.println("[CLIENT SIDE] LOGIN COM SUCESSO!");
-
-					break;
-				}
-				else
-				{
-					System.out.println("[CLIENT SIDE] LOGIN SEM SUCESSO!");
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
+				break;
+			}
+			else
+			{
+				System.out.println("[CLIENT SIDE] LOGIN SEM SUCESSO!");
 			}
 		}
+
+
 	}
 }

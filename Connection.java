@@ -151,7 +151,7 @@ class Connection extends Thread {
         String configPath = ucServer.rootFolderPath + "\\UsersConfig";
 
         users = ReadUsersFromFile(configPath);
-
+        User user = null;
         boolean login = true;
 
         // LOGIN
@@ -166,7 +166,7 @@ class Connection extends Thread {
                 outo.writeObject(new RespostaServidor("LoginPW", "Introduza a password: "));
                 String passwordReceived = in.readUTF();
 
-                User user = new User(usernameReceived, passwordReceived);
+                user = new User(usernameReceived, passwordReceived);
 
                 // Leitura dos clientes a fazer login
                 System.out.println("Received from client[" + thread_number + "] - Username: " + user.getUsername());
@@ -218,10 +218,12 @@ class Connection extends Thread {
 
         } catch (EOFException e) {
             System.out.println("EOF:" + e);
+            removeLoggedUser(servidorLigado,user);
         } catch (IOException e) {
-            System.out.println("IO:" + e);
+            removeLoggedUser(servidorLigado,user);
         } catch (Exception e) {
             e.printStackTrace();
+            removeLoggedUser(servidorLigado,user);
         }
     }
 
@@ -279,7 +281,6 @@ class Connection extends Thread {
 
                     outo.writeObject(new RespostaServidor("ChangeDir", "A diretoria atual do User[" + user.getUsername() + "] no servidor é: " + user.getDirectory() + "!\nIntroduza a nova diretoria ou [Back] para voltar atrás!"));
                     changeUserDirectory(user);
-                    System.out.println("FINAL DO CHANGE USER DIRECTORY!!!!");
 
                     break;
 
@@ -315,15 +316,8 @@ class Connection extends Thread {
                 case "8":
                     System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [8] > Exit");
                     // remove o user da lista de ligações
-                    for (String u2 : servidorLigado.usersConnected) {
-                        if (u2.equals(user.getUsername())) {
-                            System.out.println("[Server Side] - Removeu User(" + u2 + ") da lista de ligações.");
-                            servidorLigado.usersConnected.remove((String) u2);
-                            break;
-                        }
-                    }
-
-                    outo.writeObject(new RespostaServidor("EXIT", "O servidor fecha a ligação mediante pedido!"));
+                    removeLoggedUser(servidorLigado,user);
+                    outo.writeObject(new RespostaServidor("EXIT", "A ligação foi fechada!"));
                     clientSocket.close();
                     return;
             }
@@ -372,30 +366,27 @@ class Connection extends Thread {
         outo.writeObject(respostaServidor);
 
         // Cria Socket independente para Download do ficheiro
-        try
+
+        int downloadPort = 0;
+        System.out.println("[Server Side] - Download Socket no Porto " + downloadPort);
+        ServerSocket listenDownloadSocket = new ServerSocket(downloadPort);
+        out.writeInt(listenDownloadSocket.getLocalPort());
+        System.out.println("Download SOCKET = " + listenDownloadSocket);
+
+        while (true)
         {
-            int downloadPort = 0;
-            System.out.println("[Server Side] - Download Socket no Porto " + downloadPort);
-            ServerSocket listenDownloadSocket = new ServerSocket(downloadPort);
-            out.writeInt(listenDownloadSocket.getLocalPort());
-            System.out.println("Download SOCKET = " + listenDownloadSocket);
+            Socket downloadSocket = listenDownloadSocket.accept(); // BLOQUEANTE
+            System.out.println("Download_Client_SOCKET (created at accept())= " + downloadSocket);
 
-            while (true)
-            {
-                Socket downloadSocket = listenDownloadSocket.accept(); // BLOQUEANTE
-                System.out.println("Download_Client_SOCKET (created at accept())= " + downloadSocket);
+            new DownloadConnection(downloadSocket, fullFilePath);
 
-                new DownloadConnection(downloadSocket, fullFilePath);
+            System.out.println("[Server Side] - Ficheiro recebido com sucesso!");
+            listenDownloadSocket.close();
 
-                System.out.println("[Server Side] - Ficheiro recebido com sucesso!");
-                listenDownloadSocket.close();
-
-                respostaServidor = new RespostaServidor("DownloadFinish", "Ficheiro enviado com sucesso!");
-                outo.writeObject(respostaServidor);
-            }
-        } catch (IOException e) {
-            System.out.println("Listen: " + e.getMessage());
+            respostaServidor = new RespostaServidor("DownloadFinish", "Ficheiro enviado com sucesso!");
+            outo.writeObject(respostaServidor);
         }
+
     }
 
     private synchronized void uploadFile(User userAtual, RespostaDiretorias diretoriaAtual) throws Exception {
@@ -405,85 +396,77 @@ class Connection extends Thread {
         String fileName = in.readUTF();
         System.out.println("[Client Side] - Nome recebido: " + fileName);
 
-        try
+
+        ServerSocket listenUploadSocket = new ServerSocket(0);
+        System.out.println("[Server Side] - Download Socket no Porto " + listenUploadSocket.getLocalPort());
+        out.writeInt(listenUploadSocket.getLocalPort());
+        System.out.println("Upload SOCKET Listening = " + listenUploadSocket);
+
+
+
+        while (true)
         {
-            ServerSocket listenUploadSocket = new ServerSocket(0);
-            System.out.println("[Server Side] - Download Socket no Porto " + listenUploadSocket.getLocalPort());
-            out.writeInt(listenUploadSocket.getLocalPort());
-            System.out.println("Upload SOCKET Listening = " + listenUploadSocket);
+            Socket uploadSocket = listenUploadSocket.accept(); // BLOQUEANTE
+            System.out.println("Upload_Client_SOCKET (created at accept())= " + uploadSocket);
 
-            while (true)
-            {
-                Socket uploadSocket = listenUploadSocket.accept(); // BLOQUEANTE
-                System.out.println("Upload_Client_SOCKET (created at accept())= " + uploadSocket);
+            new UploadConnection(uploadSocket, fileName, userAtual.getFullDirectory());
 
-                new UploadConnection(uploadSocket, fileName, userAtual.getFullDirectory());
+            System.out.println("[Server Side] - Ficheiro recebido com sucesso!");
+            listenUploadSocket.close();
 
-                System.out.println("[Server Side] - Ficheiro recebido com sucesso!");
-                listenUploadSocket.close();
-
-                RespostaServidor respostaServidor = new RespostaServidor("uploadFinish", "Ficheiro enviado com sucesso!");
-                outo.writeObject(respostaServidor);
-            }
+            RespostaServidor respostaServidor = new RespostaServidor("uploadFinish", "Ficheiro enviado com sucesso!");
+            outo.writeObject(respostaServidor);
         }
-        catch (IOException e) {
-            System.out.println("Listen: " + e.getMessage());
-        }
-
 
     }
 
 
     private synchronized void changePassword(User userAtual) throws Exception
     {
-        try
+
+        System.out.println("Client [" + userAtual.getUsername()+"] quer trocar de Password.");
+        RespostaServidor respostaServidor = new RespostaServidor("PW", "Introduza nova PW ?");
+
+        outo.writeObject(respostaServidor);
+
+        String newPw = in.readUTF();
+        System.out.println("PW nova do client [" + userAtual.getUsername()+"]: " + newPw);
+
+        userAtual.setPassword(newPw);
+
+        // Vai à lista de Users e altera a PW, escrevendo de novo no ficheiro objeto a nova Password
+        List<User> users = ReadUsersFromFile(configPath);
+        User foundUser = null;
+        // Percorre os users até encontrar
+        for(User u : users)
         {
-            System.out.println("Client [" + userAtual.getUsername()+"] quer trocar de Password.");
-            RespostaServidor respostaServidor = new RespostaServidor("PW", "Introduza nova PW ?");
-
-            outo.writeObject(respostaServidor);
-
-            String newPw = in.readUTF();
-            System.out.println("PW nova do client [" + userAtual.getUsername()+"]: " + newPw);
-
-            userAtual.setPassword(newPw);
-
-            // Vai à lista de Users e altera a PW, escrevendo de novo no ficheiro objeto a nova Password
-            List<User> users = ReadUsersFromFile(configPath);
-            User foundUser = null;
-            // Percorre os users até encontrar
-            for(User u : users)
+            // Encontrou o USER
+            if (u.getUsername().equals(userAtual.getUsername()))
             {
-                // Encontrou o USER
-                if (u.getUsername().equals(userAtual.getUsername()))
-                {
-                    u.setPassword(newPw);
-                    WriteUsersToFile(users, configPath);
-                    break;
-                }
+                u.setPassword(newPw);
+                WriteUsersToFile(users, configPath);
+                break;
             }
+        }
 
-            System.out.println("ATUALIZAMOS A PW");
+        System.out.println("ATUALIZAMOS A PW");
 
-            String texto = "PW do cliente " + userAtual.getUsername() + " modificada. Terá de fazer login de novo!";
-            outo.writeObject(new RespostaServidor("PWaccept", texto));
+        String texto = "PW do cliente " + userAtual.getUsername() + " modificada. Terá de fazer login de novo!";
+        outo.writeObject(new RespostaServidor("PWaccept", texto));
 
-            // remove o user da lista de ligações
-            for (String u2 : servidorLigado.usersConnected)
+        // remove o user da lista de ligações
+        for (String u2 : servidorLigado.usersConnected)
+        {
+            if (u2.equals(userAtual.getUsername()))
             {
-                if (u2.equals(userAtual.getUsername()))
-                {
-                    System.out.println("[Server Side] - Removeu User(" + u2 + ") da lista de ligações.");
-                    servidorLigado.usersConnected.remove((String) u2);
-                    break;
-                }
+                System.out.println("[Server Side] - Removeu User(" + u2 + ") da lista de ligações.");
+                servidorLigado.usersConnected.remove((String) u2);
+                break;
             }
+        }
 
-            login(servidorLigado.usersConnected);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+        login(servidorLigado.usersConnected);
+
 
     }
 
@@ -576,5 +559,24 @@ class Connection extends Thread {
 
         WriteUsersToFile(users, configPath);
 
+    }
+
+    private synchronized void removeLoggedUser(ucServer servidorLigado, User user)
+    {
+        // remove o user da lista de ligações
+        for (String u2 : servidorLigado.usersConnected) {
+            if (u2.equals(user.getUsername())) {
+                System.out.println("[Server Side] - Removeu User(" + u2 + ") da lista de ligações.");
+                servidorLigado.usersConnected.remove((String) u2);
+                break;
+            }
+        }
+
+
+        /*try {
+            clientSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }*/
     }
 }

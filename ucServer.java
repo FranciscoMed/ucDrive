@@ -1,5 +1,5 @@
 
-import jdk.swing.interop.SwingInterOpUtils;
+
 
 import javax.xml.crypto.Data;
 import java.net.*;
@@ -73,21 +73,6 @@ public class ucServer extends Thread
 
         ucServer servidorAtual = new ucServer(7000);
 
-        // Thread para UDP
-        Thread udpThread = new Thread()
-        {
-            public void run()
-            {
-                try {
-                    udpRunningThread(servidorAtual, firstPort, secondPort);
-                }
-                finally {
-                    System.out.println("Closing TCP server");
-                }
-            }
-        };
-
-
         // Thread para TCP
         Thread tcpThread = new Thread()
         {
@@ -108,22 +93,43 @@ public class ucServer extends Thread
             }
         };
 
+        // Thread para UDP
+        Thread udpThread = new Thread()
+        {
+            public void run()
+            {
+                try {
+                    udpRunningThread(servidorAtual, firstPort, secondPort);
+                }
+                finally {
+                    System.out.println("Closing TCP server");
+                }
+            }
+        };
+
+
+
+
 
         isPrimary(servidorAtual, firstPort);
         // Faz a verificação de qual servidor será o primário
+
+
         if (servidorAtual.isPrimary)
         {
             System.out.println("[Server Side] - Sou o Servidor Primário!");
 
-            udpThread.start();
+            System.out.println("[Server Side] - Launch UDP");
+            //udpThread.start();
+            System.out.println("[Server Side] - Launch TCP");
             tcpThread.start();
 
-            System.out.println("here 3");
         }
         else
         {
             System.out.println("[Server Side] - Sou o Servidor Secundário!");
             udpThread.start();
+            tcpThread.start();
 
             System.out.println("CHEGO AQUUUUUUUUUUUUUI 123");
         }
@@ -131,6 +137,8 @@ public class ucServer extends Thread
 
 
     }
+
+
 
     // Retorna o Socket de ligação ao Servidor ou então que é o Segundo Servidor
     private static synchronized boolean isPrimary(ucServer thisServer, int port) throws Exception
@@ -164,7 +172,7 @@ public class ucServer extends Thread
     // Thread das comunicaçõs UDP entre o servidor principal e os clientes
     public static synchronized void tcpRunningThread(ucServer thisServer, int port) throws IOException
     {
-        //Lê Config
+
         System.out.println("[TCP CONNECTION] - À Escuta no Porto " + port);
 
         try
@@ -265,7 +273,7 @@ public class ucServer extends Thread
                     if (contadorFalhas >= 5) // FALTA MUDAR PARA VARIAVEL DO CONFIG
                     {
                         udpSocket.close();
-                        System.out.println("DEVERIA ASSUMIR AQUI COMO SERVIDOR PRINCIPAL");
+                        System.out.println("TENTA ASSUMIR AQUI COMO SERVIDOR PRINCIPAL");
 
                         System.out.println(isPrimary(thisServer, firstPort));
                         return;
