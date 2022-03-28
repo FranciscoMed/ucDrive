@@ -4,14 +4,14 @@ import java.util.*;
 
 public class ucClient
 {
-	String primaryServerAddress = "localhost";
+	String primaryServerAddress = "176.79.221.154";
+	String secondarServerAddress = "176.79.221.154";
 	int serversocketport = 7000;
 	String localDirectory = System.getProperty("user.dir") + "\\Home";
 
 	public static void main(String[] args)
 	{
 		ucClient localClient = new ucClient();
-
 
 		// Percorre o menu cliente sempre, até ser fechado pelo próprio cliente
 		while(menuCliente(localClient));
@@ -32,7 +32,6 @@ public class ucClient
 			// Verifica se quer fazer o login ou outras coisas locais apenas
 			while(true)
 			{
-
 				// Imprime menu com Possiveis comandos
 				String menu = "[CLIENT SIDE] - O que deseja fazer ? [Digite o numero apenas!]\n[0] Login \n[1] Alterar endereços \n[2] Listar Dir Cliente\n[3] Mudar Dir Cliente\n[4] Exit";
 				System.out.println(menu);
@@ -53,6 +52,15 @@ public class ucClient
 					{
 						System.out.println("[CLIENT SIDE] - Este Host não existe: " + localClient.primaryServerAddress);
 						System.out.println("[CLIENT SIDE] - Tem que mudar o endereço");
+
+						System.out.println("PRIMARY SERVER ADDRESS -> " + localClient.primaryServerAddress);
+
+						String aux = localClient.primaryServerAddress;
+						localClient.primaryServerAddress = localClient.secondarServerAddress;
+						localClient.secondarServerAddress = aux;
+
+						System.out.println("AFTER PRIMARY SERVER ADDRESS -> " + localClient.primaryServerAddress);
+
 						errorexist = true;
 					}
 					catch (IOException ioe)
@@ -107,8 +115,6 @@ public class ucClient
 				}
 			}
 
-
-
 			// Passagem para o menu com já opções de online
 			while(true)
 			{
@@ -157,7 +163,6 @@ public class ucClient
 				{
 					out.writeUTF(escolha);
 					System.out.println("Enviei escolha ao cliente através da " + s);
-
 
 					RespostaServidor respostaServidor = (RespostaServidor) ino.readObject();
 

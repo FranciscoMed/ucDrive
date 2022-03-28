@@ -27,8 +27,6 @@ public class ucServer extends Thread
     public static synchronized void main(String args[]) throws Exception
     {
         // o True serve para dizer que é o Primary Server, a false seria o secundario.
-
-
         String configPathManual = ucServer.rootFolderPath + "\\ServerConfig";
         int  heartbeat = 0, primaryPort = 0, failbeat = 0, secondaryPort = 0;
 
@@ -123,12 +121,14 @@ public class ucServer extends Thread
             System.out.println("[Server Side] - Sou o Servidor Secundário!");
             udpThread.start();
 
-            try {
+            try
+            {
                 udpThread.join();
 
                 System.out.println("AFTER JOIN");
                 restartServer(servidorAtual.ServerPort, heartbeat, failbeat, configPathManual);
-            }catch (Exception e)
+            }
+            catch (Exception e)
             {
                 e.printStackTrace();
             }
@@ -216,6 +216,8 @@ public class ucServer extends Thread
         try
         {
             ServerSocket listenSocket = new ServerSocket(port);
+            System.out.println(listenSocket.getInetAddress());
+
             thisServer.usersFolderPath = System.getProperty("user.dir") + "\\Servidor 1\\Users";
             thisServer.isPrimary = true;
             thisServer.listenSocket = listenSocket;
@@ -371,7 +373,6 @@ public class ucServer extends Thread
         }
         return ret;
     }
-
 }
 
 
