@@ -4,8 +4,8 @@ import java.util.*;
 
 public class ucClient
 {
-	String primaryServerAddress = "176.79.221.154";
-	String secondarServerAddress = "176.79.221.154";
+	String primaryServerAddress = "localhost";
+	String secondarServerAddress = "168.182.214.42";
 	int serversocketport = 7000;
 	String localDirectory = System.getProperty("user.dir") + "\\Home";
 
@@ -50,23 +50,27 @@ public class ucClient
 					}
 					catch (UnknownHostException uhe)
 					{
-						System.out.println("[CLIENT SIDE] - Este Host não existe: " + localClient.primaryServerAddress);
-						System.out.println("[CLIENT SIDE] - Tem que mudar o endereço");
+						System.out.println("[CLIENT SIDE] - Este Host não é reconhecido - Port: " + localClient.serversocketport + " no Endereço: "+ localClient.primaryServerAddress);
 
-						System.out.println("PRIMARY SERVER ADDRESS -> " + localClient.primaryServerAddress);
 
 						String aux = localClient.primaryServerAddress;
 						localClient.primaryServerAddress = localClient.secondarServerAddress;
 						localClient.secondarServerAddress = aux;
 
-						System.out.println("AFTER PRIMARY SERVER ADDRESS -> " + localClient.primaryServerAddress);
+						System.out.println("[CLIENT SIDE] - Irá tentar conectar no Servidor secundário - Port: " + localClient.serversocketport + " no Endereço: "+ localClient.primaryServerAddress);
 
 						errorexist = true;
 					}
 					catch (IOException ioe)
 					{
 						System.out.println("[CLIENT SIDE] - Conexao recusada no Port: " + localClient.serversocketport + " no Endereço: "+ localClient.primaryServerAddress);
-						System.out.println("[CLIENT SIDE] - Verifique os dados de ligação ao Servidor");
+
+						String aux = localClient.primaryServerAddress;
+						localClient.primaryServerAddress = localClient.secondarServerAddress;
+						localClient.secondarServerAddress = aux;
+
+						System.out.println("[CLIENT SIDE] - Irá tentar conectar no Servidor secundário - Port: " + localClient.serversocketport + " no Endereço: "+ localClient.primaryServerAddress);
+
 						errorexist = true;
 					}
 
@@ -556,6 +560,7 @@ public class ucClient
 			{
 				System.out.println("Esse destino " + newDirectory + " não existe ou não é uma pasta! Tente um novo dentro dos possíveis.");
 				printDirectoryClient(listaDiretoria, split[split.length - 1]);
+				System.out.print("-- ");
 			}
 
 		}

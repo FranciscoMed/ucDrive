@@ -12,11 +12,15 @@ public class ucServer extends Thread
     int ServerPort;
     Boolean isPrimary;
     ServerSocket listenSocket;
+    int heartbeat;
+    int failbeat;
 
-    public ucServer(int serverPort)
+    public ucServer(int serverPort, int heartbeat, int failbeat)
     {
         this.usersConnected = new ArrayList<>();
         this.ServerPort = serverPort;
+        this.heartbeat = heartbeat;
+        this.failbeat = failbeat;
     }
 
     public ServerSocket getListenSocket()
@@ -24,12 +28,12 @@ public class ucServer extends Thread
         return listenSocket;
     }
 
-    public static synchronized void main(String args[]) throws Exception
+    public static synchronized void main(String args[])
     {
-        // o True serve para dizer que é o Primary Server, a false seria o secundario.
         String configPathManual = ucServer.rootFolderPath + "\\ServerConfig";
-        int  heartbeat = 0, primaryPort = 0, failbeat = 0, secondaryPort = 0;
+        int  heartbeat = 5, primaryPort = 7000, failbeat = 5;
 
+        // Leitura do ficheiro config dos servers
         try
         {
             File config = new File(configPathManual);
@@ -50,113 +54,29 @@ public class ucServer extends Thread
                 {
                     primaryPort =  Integer.parseInt(serverConfig.substring((13)));
                 }
-                else if(serverConfig.contains("secondaryPort:"))
-                {
-                    secondaryPort =  Integer.parseInt(serverConfig.substring((15)));
-                }
             }
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            System.out.println("[Server side] - Falha na leitura da config do servidor. Usará os valores default [Heartbeat:" + heartbeat + "|Failbeat:" + failbeat + "|Port:" + primaryPort + "]");
+            System.out.println("[Server side] - Error: " + e.getMessage());
         }
         int firstPort = primaryPort;
-        int secondPort = secondaryPort;
 
-        ucServer servidorAtual = new ucServer(7000);
-
-        // Thread para TCP
-        Thread tcpThread = new Thread()
-        {
-            public void run()
-            {
-                try
-                {
-                    tcpRunningThread(servidorAtual, firstPort);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-                finally
-                {
-                    System.out.println("Closing TCP server");
-                }
-            }
-        };
-
-        // Thread para UDP
-        Thread udpThread = new Thread()
-        {
-            public void run()
-            {
-                try
-                {
-                    udpRunningThread(servidorAtual, firstPort);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-            }
-        };
-
-
-        // Faz a verificação de qual servidor será o primário
-        isPrimary(servidorAtual, firstPort);
-
-        if (servidorAtual.isPrimary)
-        {
-            System.out.println("[Server Side] - Sou o Servidor Primário!");
-
-            System.out.println("[Server Side] - Launch UDP");
-            udpThread.start();
-
-            System.out.println("[Server Side] - Launch TCP");
-            tcpThread.start();
-
-        }
-        else
-        {
-            System.out.println("[Server Side] - Sou o Servidor Secundário!");
-            udpThread.start();
-
-            try
-            {
-                udpThread.join();
-
-                System.out.println("AFTER JOIN");
-                restartServer(servidorAtual.ServerPort, heartbeat, failbeat, configPathManual);
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
-
-        }
+        innitServer(firstPort, heartbeat, failbeat, configPathManual);
     }
 
-    private static void restartServer(int serverPort, int heartbeat, int failbeat, String configPathManual) throws Exception
+    // Simplesmente relança o inicio do servidor
+    private static void innitServer(int serverPort, int heartbeat, int failbeat, String configPathManual)
     {
-        ucServer servidorAtual = new ucServer(7000);
+        ucServer servidorAtual = new ucServer(serverPort, heartbeat, failbeat);
 
         // Thread para TCP
         Thread tcpThread = new Thread()
         {
             public void run()
             {
-                try
-                {
                     tcpRunningThread(servidorAtual, serverPort);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-                finally
-                {
-                    System.out.println("Closing TCP server");
-                }
             }
         };
 
@@ -165,14 +85,7 @@ public class ucServer extends Thread
         {
             public void run()
             {
-                try
-                {
-                    udpRunningThread(servidorAtual, serverPort);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
+                udpRunningThread(servidorAtual, serverPort);
             }
         };
 
@@ -189,7 +102,6 @@ public class ucServer extends Thread
 
             System.out.println("[Server Side] - Launch TCP");
             tcpThread.start();
-
         }
         else
         {
@@ -199,10 +111,9 @@ public class ucServer extends Thread
             try
             {
                 udpThread.join();
-
-                System.out.println("AFTER JOIN");
-                restartServer(servidorAtual.ServerPort, heartbeat, failbeat, configPathManual);
-            }catch (Exception e)
+                innitServer(servidorAtual.ServerPort, heartbeat, failbeat, configPathManual);
+            }
+            catch (Exception e)
             {
                 e.printStackTrace();
             }
@@ -211,7 +122,7 @@ public class ucServer extends Thread
     }
 
     // Retorna o Socket de ligação ao Servidor ou então que é o Segundo Servidor
-    private static synchronized boolean isPrimary(ucServer thisServer, int port) throws Exception
+    private static synchronized boolean isPrimary(ucServer thisServer, int port)
     {
         try
         {
@@ -242,13 +153,12 @@ public class ucServer extends Thread
     }
 
     // Thread das comunicaçõs UDP entre o servidor principal e os clientes
-    public static synchronized void tcpRunningThread(ucServer thisServer, int port) throws IOException
+    public static synchronized void tcpRunningThread(ucServer thisServer, int port)
     {
-
-        System.out.println("[TCP CONNECTION] - À Escuta no Porto " + port);
-
         try
         {
+            System.out.println("[TCP CONNECTION] - À Escuta no Porto " + port);
+
             ServerSocket thisSocket = thisServer.getListenSocket();
 
             thisServer.isPrimary = true;
@@ -262,10 +172,12 @@ public class ucServer extends Thread
                 new Connection(clientSocket, thisServer);
             }
         }
-        catch (Exception e)
+        catch (IOException io)
         {
-            e.printStackTrace();
+            io.printStackTrace();
         }
+
+
     }
 
     // Thread das comunicaçõs UDP entre os servidores
@@ -325,7 +237,8 @@ public class ucServer extends Thread
                     udpSocket.send(DpSend);
 
                     // Step 4 : Espera receber
-                    udpSocket.setSoTimeout(1000); // FALTA MUDAR PARA VARIAVEL DO CONFIG
+
+                    udpSocket.setSoTimeout(1); // Permite lançar a SocketTimeoutException
                     try
                     {
                         byte[] receive = new byte[65535];
@@ -341,15 +254,15 @@ public class ucServer extends Thread
                         System.out.println("[UDP CONNECTION] - Não recebemos resposta. Falha [" + contadorFalhas + "]");
                     }
 
-                    if (contadorFalhas >= 1) // FALTA MUDAR PARA VARIAVEL DO CONFIG
+                    if (contadorFalhas > thisServer.failbeat)
                     {
                         udpSocket.close();
                         System.out.println("[UDP CONNECTION] - Demasiadas falhas seguidas. Irá assumir como servidor principal!");
                         return;
                     }
 
-                    // Faz sleep do tempo suposto entre envios
-                    sleep(10000); // FALTA MUDAR PARA VARIAVEL DO CONFIG
+                    // Faz sleep do tempo suposto (Do ServerConfig) entre envios
+                    sleep(thisServer.heartbeat * 1000L);
                 }
             }
             catch (Exception e)
@@ -359,11 +272,13 @@ public class ucServer extends Thread
         }
     }
 
-    // Passa de Bytes para String - Auxiliar
+    // Auxiliar - Passa de Bytes para String
     public static StringBuilder data(byte[] a)
     {
         if (a == null)
+        {
             return null;
+        }
         StringBuilder ret = new StringBuilder();
         int i = 0;
         while (a[i] != 0)

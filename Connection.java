@@ -224,17 +224,28 @@ class Connection extends Thread
         }
         catch (EOFException e)
         {
-            System.out.println("EOF:" + e.getMessage());
-            removeLoggedUser(servidorLigado,user);
+            if(!(user == null))
+            {
+                System.out.println("EOF:" + e.getMessage());
+                removeLoggedUser(servidorLigado,user);
+            }
+
         }
         catch (IOException e)
         {
-            removeLoggedUser(servidorLigado,user);
+            if(!(user == null))
+            {
+                System.out.println("IO:" + e.getMessage());
+                removeLoggedUser(servidorLigado,user);
+            }
         }
         catch (Exception e)
         {
-            e.printStackTrace();
-            removeLoggedUser(servidorLigado,user);
+            if(!(user == null))
+            {
+                System.out.println("Exception:" + e.getMessage());
+                removeLoggedUser(servidorLigado,user);
+            }
         }
     }
 
@@ -251,8 +262,9 @@ class Connection extends Thread
 
 
             // Verifica que a escolha está dentro dos comandos possíveis
-            while (Integer.parseInt(escolhaCliente) < 0 || Integer.parseInt(escolhaCliente) > 8) {
-                System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: Valor Errado (" + escolhaCliente + ") - Tente novamente!");
+            while (Integer.parseInt(escolhaCliente) < 0 || Integer.parseInt(escolhaCliente) > 8)
+            {
+                System.out.println("[TCP Server] - Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: Valor Errado (" + escolhaCliente + ") - Tente novamente!");
 
                 String texto = "Valor errado - Introduza novo valor dentro dos possiveis!";
                 RespostaServidor respostaServidor = new RespostaServidor("WrongValue", texto);
@@ -266,29 +278,28 @@ class Connection extends Thread
             {
                 case "0":
                     // Alterar PW
-                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [0] > Alterar PW");
+                    System.out.println("[TCP Server] - Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [0] > Alterar PW");
                     changePassword(user);
                     break;
 
                 case "1":
                     // Alterar endereços
-                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [1] > Alterar endereços");
+                    System.out.println("[TCP Server] - Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [1] > Alterar endereços");
                     break;
 
                 case "2":
                     // Listar Dir Servidor
-                    System.out.println("teste -----> " + user.getUsername() + "   " + user.getFullDirectory());
                     System.out.println(userDirectory);
 
 
-                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [2] > Listar Dir Servidor");
+                    System.out.println("[TCP Server] - Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [2] > Listar Dir Servidor");
                     outo.writeObject(new RespostaServidor("ServerDir", "A diretoria atual do user[" + user.getUsername() + "] no servidor é: " + user.getDirectory()));
                     outo.writeObject(new RespostaDiretorias("ServerDir", user.getFullDirectory()));
                     break;
 
                 case "3":
                     // Mudar Dir Servidor
-                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [3] > Mudar Dir Servidor");
+                    System.out.println("[TCP Server] - Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [3] > Mudar Dir Servidor");
 
                     outo.writeObject(new RespostaServidor("ChangeDir", "A diretoria atual do User[" + user.getUsername() + "] no servidor é: " + user.getDirectory() + "!\nIntroduza a nova diretoria, [Back] para voltar atrás ou [Cancel] para cancelar a operação!"));
                     changeUserDirectory(user);
@@ -297,7 +308,7 @@ class Connection extends Thread
 
                 case "6":
                     // Descarregar ficheiro
-                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [6] > Descarregar ficheiro");
+                    System.out.println("[TCP Server] - Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [6] > Descarregar ficheiro");
 
 
                     // Escolher o ficheiro
@@ -306,13 +317,11 @@ class Connection extends Thread
                     outo.writeObject(diretoriaAtual);
 
                     downloadFile(user, diretoriaAtual);
-
-                    System.out.println("FIM DO DESCARREGAR NO SERVIDOR !!!!!!!!!!!!!!!!! "); // FALTA APAGAR
-
                     break;
+
                 case "7":
                     // Carregar ficheiro
-                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [7] > Carregar ficheiro");
+                    System.out.println("[TCP Server] - Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [7] > Carregar ficheiro");
 
                     RespostaServidor respostaServidor = new RespostaServidor("upFile", "Carregar para >> " + user.getFullDirectory());
                     outo.writeObject(respostaServidor);
@@ -320,26 +329,25 @@ class Connection extends Thread
                     diretoriaAtual = new RespostaDiretorias("ServerDirectory", user.getFullDirectory());
 
                     uploadFile(user, diretoriaAtual);
-
-                    System.out.println("FIM DO Upload NO SERVIDOR !!!!!!!!!!!!!!!!! "); // FALTA APAGAR
-
                     break;
+
                 case "8":
-                    System.out.println("Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [8] > Exit");
+                    System.out.println("[TCP Server] - Received from client[" + user.getUsername() + " - " + thread_number + "] - Escolha: [8] > Exit");
                     // remove o user da lista de ligações
                     removeLoggedUser(servidorLigado,user);
                     outo.writeObject(new RespostaServidor("EXIT", "A ligação foi fechada!"));
                     clientSocket.close();
                     return;
+
             }
         }
     }
 
-    private synchronized void downloadFile(User userAtual, RespostaDiretorias diretoriaAtual) throws Exception {
+    private synchronized void downloadFile(User userAtual, RespostaDiretorias diretoriaAtual) throws Exception
+    {
 
 
         String fileName = in.readUTF();
-
         String fullFilePath = "";
 
         // Verifica se é um ficheiro existente e se é possível ser descarregado.
@@ -351,8 +359,10 @@ class Connection extends Thread
                 return;
             }
 
-            for (String fAtual : diretoriaAtual.getDirectoryList()) {
-                if (fAtual.equals(fileName)) {
+            for (String fAtual : diretoriaAtual.getDirectoryList())
+            {
+                if (fAtual.equals(fileName))
+                {
                     fullFilePath = userAtual.getFullDirectory() + "\\" + fileName;
 
                     if (new File(fullFilePath).isFile()) {
@@ -361,7 +371,8 @@ class Connection extends Thread
                 }
             }
 
-            if (!foundFileOnDirectory) {
+            if (!foundFileOnDirectory)
+            {
                 System.out.println("[TCP Server] - File[" + fileName + "] não existe ou não pode ser descarregado.");
                 RespostaServidor respostaServidor = new RespostaServidor("RepeatFile", "Ficheiro não pode ser descarregado. Introduza novo nome!");
                 outo.writeObject(respostaServidor);
@@ -377,12 +388,10 @@ class Connection extends Thread
         outo.writeObject(respostaServidor);
 
         // Cria Socket independente para Download do ficheiro
-
         int downloadPort = 0;
-        System.out.println("[TCP Server] - Download Socket no Porto " + downloadPort);
         ServerSocket listenDownloadSocket = new ServerSocket(downloadPort);
         out.writeInt(listenDownloadSocket.getLocalPort());
-        System.out.println("Download SOCKET = " + listenDownloadSocket);
+        System.out.println("[TCP Server] - Download Socket = " + listenDownloadSocket);
 
         while (true)
         {
@@ -400,12 +409,13 @@ class Connection extends Thread
 
     }
 
-    private synchronized void uploadFile(User userAtual, RespostaDiretorias diretoriaAtual) throws Exception {
+    private synchronized void uploadFile(User userAtual, RespostaDiretorias diretoriaAtual) throws Exception
+    {
 
-        System.out.println("[Client Side] - A espera do nome do ficheiro");
+        System.out.println("[TCP Server] - A espera do nome do ficheiro");
         //Pede Nome Ficheiro
         String fileName = in.readUTF();
-        System.out.println("[Client Side] - Nome recebido: " + fileName);
+        System.out.println("[TCP Server] - Nome recebido: " + fileName);
 
 
         ServerSocket listenUploadSocket = new ServerSocket(0);
@@ -418,7 +428,7 @@ class Connection extends Thread
         while (true)
         {
             Socket uploadSocket = listenUploadSocket.accept(); // BLOQUEANTE
-            System.out.println("Upload_Client_SOCKET (created at accept())= " + uploadSocket);
+            System.out.println("[TCP Server] - Upload Client SOCKET (created at accept())= " + uploadSocket);
 
             new UploadConnection(uploadSocket, fileName, userAtual.getFullDirectory());
 
@@ -435,13 +445,13 @@ class Connection extends Thread
     private synchronized void changePassword(User userAtual) throws Exception
     {
 
-        System.out.println("Client [" + userAtual.getUsername()+"] quer trocar de Password.");
+        System.out.println("[TCP Server] - Client [" + userAtual.getUsername()+"] quer trocar de Password.");
         RespostaServidor respostaServidor = new RespostaServidor("PW", "Introduza nova PW ?");
 
         outo.writeObject(respostaServidor);
 
         String newPw = in.readUTF();
-        System.out.println("PW nova do client [" + userAtual.getUsername()+"]: " + newPw);
+        System.out.println("[TCP Server] - PW nova do client [" + userAtual.getUsername()+"]: " + newPw);
 
         userAtual.setPassword(newPw);
 
@@ -460,8 +470,6 @@ class Connection extends Thread
             }
         }
 
-        System.out.println("ATUALIZAMOS A PW");
-
         String texto = "PW do cliente " + userAtual.getUsername() + " modificada. Terá de fazer login de novo!";
         outo.writeObject(new RespostaServidor("PWaccept", texto));
 
@@ -477,8 +485,6 @@ class Connection extends Thread
         }
 
         login(servidorLigado.usersConnected);
-
-
     }
 
     // Faz o print da lista que recebemos como árvore de diretorias
