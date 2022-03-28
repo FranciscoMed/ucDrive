@@ -1,4 +1,3 @@
-heartbeat: 50
-failbeat: 5
+heartbeat: 5
+failbeat: 2
 primaryPort: 7000
-secondaryPort: 5000

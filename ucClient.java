@@ -52,7 +52,6 @@ public class ucClient
 					{
 						System.out.println("[CLIENT SIDE] - Este Host não é reconhecido - Port: " + localClient.serversocketport + " no Endereço: "+ localClient.primaryServerAddress);
 
-
 						String aux = localClient.primaryServerAddress;
 						localClient.primaryServerAddress = localClient.secondarServerAddress;
 						localClient.secondarServerAddress = aux;
