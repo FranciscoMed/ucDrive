@@ -15,6 +15,7 @@ public class ucServer extends Thread
     int heartbeat;
     int failbeat;
     String primaryAddress;
+    int numberConnections;
 
     public ucServer(int serverPort, int heartbeat, int failbeat, String primaryAddress)
     {
@@ -23,6 +24,7 @@ public class ucServer extends Thread
         this.heartbeat = heartbeat;
         this.failbeat = failbeat;
         this.primaryAddress = primaryAddress;
+        this.numberConnections = 0;
     }
 
     public ServerSocket getListenSocket()

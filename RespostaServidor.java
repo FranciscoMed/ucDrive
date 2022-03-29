@@ -1,6 +1,7 @@
 import java.io.Serializable;
 
-public class RespostaServidor implements Serializable {
+public class RespostaServidor implements Serializable
+{
     private String resposta;
     private String mensagemCompleta;
 

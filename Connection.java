@@ -8,6 +8,7 @@ class Connection extends Thread
     DataInputStream in;
     ObjectOutputStream outo;
     ObjectInputStream ino;
+    int filesPort;
 
     String userDirectory;
 
@@ -21,6 +22,7 @@ class Connection extends Thread
     public Connection(Socket aClientSocket, ucServer servidorPrimario)
     {
         this.servidorLigado = servidorPrimario;
+        this.filesPort = 6500 + servidorLigado.numberConnections;
 
         try {
             clientSocket = aClientSocket;
@@ -40,6 +42,7 @@ class Connection extends Thread
     //=============================
     public synchronized void run()
     {
+        servidorLigado.numberConnections = servidorLigado.numberConnections + 1;
 
         System.out.println("Root Folder Path > " + ucServer.rootFolderPath);
 
@@ -257,6 +260,8 @@ class Connection extends Thread
         {
             System.out.println("[TCP Server] - Waiting for commands from " + user.getUsername());
 
+            System.out.println("TESTES -> THIS SERVER Nº OF CONNECTIONS: " + servidorLigado.numberConnections);
+
             // Apenas lê quando houver algo a ler
             String escolhaCliente = in.readUTF();
 
@@ -271,7 +276,6 @@ class Connection extends Thread
 
                 escolhaCliente = in.readUTF();
             }
-
 
             switch (escolhaCliente)
             {
@@ -387,7 +391,7 @@ class Connection extends Thread
         outo.writeObject(respostaServidor);
 
         // Cria Socket independente para Download do ficheiro
-        int downloadPort = 6500;
+        int downloadPort = this.filesPort;
         ServerSocket listenDownloadSocket = new ServerSocket(downloadPort);
         out.writeInt(listenDownloadSocket.getLocalPort());
         System.out.println("[TCP Server] - Download Socket = " + listenDownloadSocket);
@@ -415,8 +419,8 @@ class Connection extends Thread
         String fileName = in.readUTF();
         System.out.println("[TCP Server] - Nome recebido: " + fileName);
 
-
-        ServerSocket listenUploadSocket = new ServerSocket(6500);
+        int uploadPort = this.filesPort;
+        ServerSocket listenUploadSocket = new ServerSocket(uploadPort);
         System.out.println("[TCP Server] - Download Socket no Porto " + listenUploadSocket.getLocalPort());
         out.writeInt(listenUploadSocket.getLocalPort());
         System.out.println("Upload SOCKET Listening = " + listenUploadSocket);
@@ -580,7 +584,6 @@ class Connection extends Thread
 
         WriteUsersToFile(users, configPath);
     }
-
 
     // Remove o User da lista de users conectados num certo servidor!
     private synchronized void removeLoggedUser(ucServer servidorLigado, User user)
