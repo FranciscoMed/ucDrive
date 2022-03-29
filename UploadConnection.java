@@ -41,8 +41,6 @@ public class UploadConnection extends Thread
             uploadSocket.close();
 
 
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }

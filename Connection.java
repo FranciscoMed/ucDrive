@@ -260,7 +260,6 @@ class Connection extends Thread
             // Apenas lê quando houver algo a ler
             String escolhaCliente = in.readUTF();
 
-
             // Verifica que a escolha está dentro dos comandos possíveis
             while (Integer.parseInt(escolhaCliente) < 0 || Integer.parseInt(escolhaCliente) > 8)
             {
@@ -388,24 +387,23 @@ class Connection extends Thread
         outo.writeObject(respostaServidor);
 
         // Cria Socket independente para Download do ficheiro
-        int downloadPort = 0;
+        int downloadPort = 6500;
         ServerSocket listenDownloadSocket = new ServerSocket(downloadPort);
         out.writeInt(listenDownloadSocket.getLocalPort());
         System.out.println("[TCP Server] - Download Socket = " + listenDownloadSocket);
 
-        while (true)
-        {
-            Socket downloadSocket = listenDownloadSocket.accept(); // BLOQUEANTE
-            System.out.println("Download_Client_SOCKET (created at accept())= " + downloadSocket);
+        Socket downloadSocket = listenDownloadSocket.accept(); // BLOQUEANTE
+        System.out.println("Download_Client_SOCKET (created at accept())= " + downloadSocket);
 
-            new DownloadConnection(downloadSocket, fullFilePath);
+        new DownloadConnection(downloadSocket, fullFilePath);
 
-            System.out.println("[TCP Server] - Ficheiro recebido com sucesso!");
-            listenDownloadSocket.close();
+        System.out.println("[TCP Server] - Ficheiro recebido com sucesso!");
+        listenDownloadSocket.close();
+        System.out.println("[TCP Server] - Fechando socket Download");
 
-            respostaServidor = new RespostaServidor("DownloadFinish", "Ficheiro enviado com sucesso!");
-            outo.writeObject(respostaServidor);
-        }
+        respostaServidor = new RespostaServidor("DownloadFinish", "Ficheiro enviado com sucesso!");
+        outo.writeObject(respostaServidor);
+
 
     }
 
@@ -418,26 +416,25 @@ class Connection extends Thread
         System.out.println("[TCP Server] - Nome recebido: " + fileName);
 
 
-        ServerSocket listenUploadSocket = new ServerSocket(0);
+        ServerSocket listenUploadSocket = new ServerSocket(6500);
         System.out.println("[TCP Server] - Download Socket no Porto " + listenUploadSocket.getLocalPort());
         out.writeInt(listenUploadSocket.getLocalPort());
         System.out.println("Upload SOCKET Listening = " + listenUploadSocket);
 
 
 
-        while (true)
-        {
-            Socket uploadSocket = listenUploadSocket.accept(); // BLOQUEANTE
-            System.out.println("[TCP Server] - Upload Client SOCKET (created at accept())= " + uploadSocket);
+        Socket uploadSocket = listenUploadSocket.accept(); // BLOQUEANTE
+        System.out.println("[TCP Server] - Upload Client SOCKET (created at accept())= " + uploadSocket);
 
-            new UploadConnection(uploadSocket, fileName, userAtual.getFullDirectory());
+        new UploadConnection(uploadSocket, fileName, userAtual.getFullDirectory());
 
-            System.out.println("[TCP Server] - Ficheiro recebido com sucesso!");
-            listenUploadSocket.close();
+        System.out.println("[TCP Server] - Ficheiro recebido com sucesso!");
+        System.out.println("[TCP Server] - Fechando socket Upload");
+        listenUploadSocket.close();
 
-            RespostaServidor respostaServidor = new RespostaServidor("uploadFinish", "Ficheiro enviado com sucesso!");
-            outo.writeObject(respostaServidor);
-        }
+        RespostaServidor respostaServidor = new RespostaServidor("uploadFinish", "Ficheiro enviado com sucesso!");
+        outo.writeObject(respostaServidor);
+
 
     }
 

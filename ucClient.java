@@ -241,11 +241,10 @@ public class ucClient
 							BufferedInputStream bis = new BufferedInputStream(fis);
 
 							int port = in.readInt();
-							Socket uploadsocket = new Socket("localhost", port);
+							Socket uploadsocket = new Socket(localClient.primaryServerAddress, port);
 
 							System.out.println("[Client Side] - Upload Socket = " + uploadsocket);
 							DataOutputStream outup = new DataOutputStream(uploadsocket.getOutputStream());
-
 
 							// Envio do ficheiro faseadamente para o Servidor
 							byte[] contents;
@@ -319,7 +318,7 @@ public class ucClient
 								System.out.println("Vai escrever para -> " + localClient.localDirectory + "\\" + newFilename);
 
 								int downloadport = in.readInt();
-								Socket downloadsocket = new Socket("localhost", downloadport);
+								Socket downloadsocket = new Socket(localClient.primaryServerAddress, downloadport);
 
 								System.out.println("SOCKET= " + s );
 
