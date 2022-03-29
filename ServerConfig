@@ -1,3 +1,4 @@
 heartbeat: 5
 failbeat: 2
 primaryPort: 7000
+primaryAddress: 168.182.214.42

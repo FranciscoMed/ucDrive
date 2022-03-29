@@ -14,13 +14,15 @@ public class ucServer extends Thread
     ServerSocket listenSocket;
     int heartbeat;
     int failbeat;
+    String primaryAddress;
 
-    public ucServer(int serverPort, int heartbeat, int failbeat)
+    public ucServer(int serverPort, int heartbeat, int failbeat, String primaryAddress)
     {
         this.usersConnected = new ArrayList<>();
         this.ServerPort = serverPort;
         this.heartbeat = heartbeat;
         this.failbeat = failbeat;
+        this.primaryAddress = primaryAddress;
     }
 
     public ServerSocket getListenSocket()
@@ -32,6 +34,7 @@ public class ucServer extends Thread
     {
         String configPathManual = ucServer.rootFolderPath + "\\ServerConfig";
         int  heartbeat = 5, primaryPort = 7000, failbeat = 5;
+        String primaryAddress = "";
 
         // Leitura do ficheiro config dos servers
         try
@@ -54,6 +57,10 @@ public class ucServer extends Thread
                 {
                     primaryPort =  Integer.parseInt(serverConfig.substring((13)));
                 }
+                else if(serverConfig.contains("primaryAddress:"))
+                {
+                    primaryAddress =  serverConfig.substring((16));
+                }
             }
         }
         catch (IOException e)
@@ -63,13 +70,13 @@ public class ucServer extends Thread
         }
         int firstPort = primaryPort;
 
-        innitServer(firstPort, heartbeat, failbeat, configPathManual);
+        innitServer(firstPort, heartbeat, failbeat, primaryAddress, configPathManual);
     }
 
     // Simplesmente relança o inicio do servidor
-    private static void innitServer(int serverPort, int heartbeat, int failbeat, String configPathManual)
+    private static void innitServer(int serverPort, int heartbeat, int failbeat, String primaryAddress, String configPathManual)
     {
-        ucServer servidorAtual = new ucServer(serverPort, heartbeat, failbeat);
+        ucServer servidorAtual = new ucServer(serverPort, heartbeat, failbeat, primaryAddress);
 
         // Thread para TCP
         Thread tcpThread = new Thread()
@@ -111,13 +118,12 @@ public class ucServer extends Thread
             try
             {
                 udpThread.join();
-                innitServer(servidorAtual.ServerPort, heartbeat, failbeat, configPathManual);
+                innitServer(servidorAtual.ServerPort, heartbeat, failbeat, primaryAddress, configPathManual);
             }
             catch (Exception e)
             {
                 e.printStackTrace();
             }
-
         }
     }
 
@@ -126,30 +132,59 @@ public class ucServer extends Thread
     {
         try
         {
-            ServerSocket listenSocket = new ServerSocket(port);
-            System.out.println(listenSocket.getInetAddress());
+            // Vai enviar um pacote UDP para verificar se é primário ou secundário
+            DatagramSocket udpSocket = new DatagramSocket();
+            InetAddress ip = InetAddress.getByName(thisServer.primaryAddress);
 
-            thisServer.usersFolderPath = System.getProperty("user.dir") + "\\Servidor 1\\Users";
-            thisServer.isPrimary = true;
-            thisServer.listenSocket = listenSocket;
-            System.out.println("Server Listen Socket = " + listenSocket);
+            // convert the String input into the byte array.
+            byte buffer[] = "PRIMARY".getBytes();
 
-            return true;
-        }
-        catch(IOException e)
-        {
-            if (e.getMessage().contains("Address already in use"))
+            // Step 2 : Create the datagramPacket for sending the data.
+            DatagramPacket DpSend = new DatagramPacket(buffer, buffer.length, ip, thisServer.ServerPort);
+
+            buffer = null;
+
+            // Step 3 : invoke the send call to actually send the data.
+            udpSocket.send(DpSend);
+
+            // Step 4 : Espera receber
+            udpSocket.setSoTimeout(5000); // Permite lançar a SocketTimeoutException
+
+            try
             {
-                thisServer.usersFolderPath = System.getProperty("user.dir") + "\\Servidor 2\\Users";
+                byte[] receive = new byte[65535];
+                DatagramPacket DpReceived = new DatagramPacket(receive, receive.length);
+                udpSocket.receive(DpReceived);
+                System.out.println("[UDP CONNECTION] - Recebemos: " + data(receive));
                 thisServer.isPrimary = false;
+
+                udpSocket.close();
+
                 return false;
             }
-            else
+            catch (SocketTimeoutException ste)
             {
-                System.out.println("Listen: " + e.getMessage());
+                System.out.println("[UDP CONNECTION] - Não recebemos resposta. Logo será o primário!!");
+
+
+                ServerSocket listenSocket = new ServerSocket(port);
+                System.out.println(listenSocket.getInetAddress());
+                thisServer.usersFolderPath = System.getProperty("user.dir") + "\\Servidor 1\\Users";
+                thisServer.isPrimary = true;
+                thisServer.listenSocket = listenSocket;
+                System.out.println("[TCP Server] - Server Listen Socket = " + listenSocket);
+
+                udpSocket.close();
+                return true;
             }
         }
-        return false;
+        catch (Exception e)
+        {
+            System.out.println("[Server Side] - Erro ao criar a Socket que verifica qual servidor será!");
+            thisServer.isPrimary = false;
+
+            return false;
+        }
     }
 
     // Thread das comunicaçõs UDP entre o servidor principal e os clientes
