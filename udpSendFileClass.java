@@ -14,7 +14,7 @@ public class udpSendFileClass
     {
         this.sourceFilePath = System.getProperty("user.dir") + relativeFilePath;
         this.destinationPath = relativeFilePath;
-        this.neighborHostName = servidorAtual.neighborAddress;
+        this.neighborHostName = servidorAtual.secondaryAddress;
     }
 
     public void createConnection()

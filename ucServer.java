@@ -241,11 +241,10 @@ public class ucServer extends Thread
                     // Cria o DatagramPacket que receberá os dados
                     DpReceive = new DatagramPacket(receive, receive.length);
 
-                    System.out.println("------------> " + DpReceive.getAddress());
-                    System.out.println("------------> " + DpReceive.getSocketAddress());
-
                     // Recebe os dados
                     udpSocket.receive(DpReceive);
+
+                    thisServer.secondaryAddress = String.valueOf(DpReceive.getAddress());
                     System.out.println("[UDP CONNECTION] - Recebemos: " + data(receive));
 
                     // Envia o ping de volta!
