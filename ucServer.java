@@ -1,5 +1,6 @@
 import java.net.*;
 import java.io.*;
+import java.security.spec.RSAOtherPrimeInfo;
 import java.util.*;
 
 
@@ -14,17 +15,19 @@ public class ucServer extends Thread
     ServerSocket listenSocket;
     int heartbeat;
     int failbeat;
-    String primaryAddress;
+    String neighborAddress;
+    String secondaryAddress;
     int numberConnections;
 
-    public ucServer(int serverPort, int heartbeat, int failbeat, String primaryAddress)
+    public ucServer(int serverPort, int heartbeat, int failbeat, String neighborAddress)
     {
         this.usersConnected = new ArrayList<>();
         this.ServerPort = serverPort;
         this.heartbeat = heartbeat;
         this.failbeat = failbeat;
-        this.primaryAddress = primaryAddress;
+        this.neighborAddress = neighborAddress;
         this.numberConnections = 0;
+        this.secondaryAddress = null;
     }
 
     public ServerSocket getListenSocket()
@@ -36,7 +39,7 @@ public class ucServer extends Thread
     {
         String configPathManual = ucServer.rootFolderPath + "\\ServerConfig";
         int  heartbeat = 5, primaryPort = 7000, failbeat = 5;
-        String primaryAddress = "";
+        String neighborAddress = "";
 
         // Leitura do ficheiro config dos servers
         try
@@ -59,9 +62,9 @@ public class ucServer extends Thread
                 {
                     primaryPort =  Integer.parseInt(serverConfig.substring((13)));
                 }
-                else if(serverConfig.contains("primaryAddress:"))
+                else if(serverConfig.contains("neighborAddress:"))
                 {
-                    primaryAddress =  serverConfig.substring((16));
+                    neighborAddress =  serverConfig.substring((17));
                 }
             }
         }
@@ -72,13 +75,13 @@ public class ucServer extends Thread
         }
         int firstPort = primaryPort;
 
-        innitServer(firstPort, heartbeat, failbeat, primaryAddress, configPathManual);
+        innitServer(firstPort, heartbeat, failbeat, neighborAddress, configPathManual);
     }
 
     // Simplesmente relança o inicio do servidor
-    private static void innitServer(int serverPort, int heartbeat, int failbeat, String primaryAddress, String configPathManual)
+    private static void innitServer(int serverPort, int heartbeat, int failbeat, String neighborAddress, String configPathManual)
     {
-        ucServer servidorAtual = new ucServer(serverPort, heartbeat, failbeat, primaryAddress);
+        ucServer servidorAtual = new ucServer(serverPort, heartbeat, failbeat, neighborAddress);
 
         // Thread para TCP
         Thread tcpThread = new Thread()
@@ -120,7 +123,7 @@ public class ucServer extends Thread
             try
             {
                 udpThread.join();
-                innitServer(servidorAtual.ServerPort, heartbeat, failbeat, primaryAddress, configPathManual);
+                innitServer(servidorAtual.ServerPort, heartbeat, failbeat, neighborAddress, configPathManual);
             }
             catch (Exception e)
             {
@@ -136,7 +139,7 @@ public class ucServer extends Thread
         {
             // Vai enviar um pacote UDP para verificar se é primário ou secundário
             DatagramSocket udpSocket = new DatagramSocket();
-            InetAddress ip = InetAddress.getByName(thisServer.primaryAddress);
+            InetAddress ip = InetAddress.getByName(thisServer.neighborAddress);
 
             // convert the String input into the byte array.
             byte buffer[] = "PRIMARY".getBytes();
@@ -158,6 +161,9 @@ public class ucServer extends Thread
                 DatagramPacket DpReceived = new DatagramPacket(receive, receive.length);
                 udpSocket.receive(DpReceived);
                 System.out.println("[UDP CONNECTION] - Recebemos: " + data(receive));
+
+                System.out.println("TESTES: Inet:" + udpSocket.getInetAddress() + "     Local:" + udpSocket.getLocalAddress());
+
                 thisServer.isPrimary = false;
 
                 udpSocket.close();
@@ -167,7 +173,6 @@ public class ucServer extends Thread
             catch (SocketTimeoutException ste)
             {
                 System.out.println("[UDP CONNECTION] - Não recebemos resposta. Logo será o primário!!");
-
 
                 ServerSocket listenSocket = new ServerSocket(port);
                 System.out.println(listenSocket.getInetAddress());
@@ -236,6 +241,9 @@ public class ucServer extends Thread
                     // Cria o DatagramPacket que receberá os dados
                     DpReceive = new DatagramPacket(receive, receive.length);
 
+                    System.out.println("------------> " + DpReceive.getAddress());
+                    System.out.println("------------> " + DpReceive.getSocketAddress());
+
                     // Recebe os dados
                     udpSocket.receive(DpReceive);
                     System.out.println("[UDP CONNECTION] - Recebemos: " + data(receive));
@@ -258,9 +266,20 @@ public class ucServer extends Thread
             {
                 // Cria o socket que vão carregar os dados.
                 DatagramSocket udpSocket = new DatagramSocket();
-                InetAddress ip = InetAddress.getByName(thisServer.primaryAddress);
+                InetAddress ip = InetAddress.getByName(thisServer.neighborAddress);
                 byte buffer[] = null;
                 int contadorFalhas = 0;
+
+                // Thread para receber ficheiros por UDP do servidor principal
+                (new Thread()
+                {
+                    public void run()
+                    {
+                        udpReceiveFileClass channelForFiles = new udpReceiveFileClass();
+                        channelForFiles.createAndListenSocket();
+                    }
+                }).start();
+
 
                 while (true)
                 {

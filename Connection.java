@@ -331,7 +331,22 @@ class Connection extends Thread
                     System.out.println("[TCP Server] - Enviei upFile");
                     diretoriaAtual = new RespostaDiretorias("ServerDirectory", user.getFullDirectory());
 
-                    uploadFile(user, diretoriaAtual);
+                    String fileUploadedName = uploadFile(user, diretoriaAtual);
+
+                    String inputRelativeFilePath = "\\Servidor 1\\Users" + "\\" + user.getDirectory() + "\\" + fileUploadedName;
+
+                    System.out.println("teste -------> " + servidorLigado.neighborAddress);
+
+
+                    // Thread para receber ficheiros por UDP do servidor principal
+                    (new Thread()
+                    {
+                        public void run()
+                        {
+                            udpSendFileClass channelForFiles = new udpSendFileClass(inputRelativeFilePath, servidorLigado);
+                            channelForFiles.createConnection();
+                        }
+                    }).start();
                     break;
 
                 case "8":
@@ -411,11 +426,11 @@ class Connection extends Thread
 
     }
 
-    private synchronized void uploadFile(User userAtual, RespostaDiretorias diretoriaAtual) throws Exception
+    private synchronized String uploadFile(User userAtual, RespostaDiretorias diretoriaAtual) throws Exception
     {
 
         System.out.println("[TCP Server] - A espera do nome do ficheiro");
-        //Pede Nome Ficheiro
+        // Pede Nome Ficheiro
         String fileName = in.readUTF();
         System.out.println("[TCP Server] - Nome recebido: " + fileName);
 
@@ -439,7 +454,7 @@ class Connection extends Thread
         RespostaServidor respostaServidor = new RespostaServidor("uploadFinish", "Ficheiro enviado com sucesso!");
         outo.writeObject(respostaServidor);
 
-
+        return fileName;
     }
 
 
