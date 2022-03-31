@@ -244,7 +244,7 @@ public class ucServer extends Thread
                     // Recebe os dados
                     udpSocket.receive(DpReceive);
 
-                    thisServer.secondaryAddress = String.valueOf(DpReceive.getAddress());
+                    thisServer.secondaryAddress = String.valueOf(DpReceive.getAddress()).substring(1);
                     System.out.println("[UDP CONNECTION] - Recebemos: " + data(receive));
 
                     // Envia o ping de volta!
