@@ -141,11 +141,14 @@ public class ucServer extends Thread
             DatagramSocket udpSocket = new DatagramSocket();
             InetAddress ip = InetAddress.getByName(thisServer.neighborAddress);
 
+            System.out.println("neighborAddress: " + thisServer.neighborAddress);
+
             // convert the String input into the byte array.
             byte buffer[] = "PRIMARY".getBytes();
 
             // Step 2 : Create the datagramPacket for sending the data.
             DatagramPacket DpSend = new DatagramPacket(buffer, buffer.length, ip, thisServer.ServerPort);
+            System.out.println("[UDP CONNECTION] SendTo: " + DpSend.getSocketAddress());
 
             buffer = null;
 
@@ -162,8 +165,6 @@ public class ucServer extends Thread
                 udpSocket.receive(DpReceived);
                 System.out.println("[UDP CONNECTION] - Recebemos: " + data(receive));
 
-                System.out.println("TESTES: Inet:" + udpSocket.getInetAddress() + "     Local:" + udpSocket.getLocalAddress());
-
                 thisServer.isPrimary = false;
 
                 udpSocket.close();
@@ -175,7 +176,7 @@ public class ucServer extends Thread
                 System.out.println("[UDP CONNECTION] - Não recebemos resposta. Logo será o primário!!");
 
                 ServerSocket listenSocket = new ServerSocket(port);
-                System.out.println(listenSocket.getInetAddress());
+                // System.out.println(listenSocket.getInetAddress());
                 thisServer.usersFolderPath = System.getProperty("user.dir") + "\\Servidor 1\\Users";
                 thisServer.isPrimary = true;
                 thisServer.listenSocket = listenSocket;

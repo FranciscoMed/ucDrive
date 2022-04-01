@@ -4,8 +4,8 @@ import java.util.*;
 
 public class ucClient
 {
-	String primaryServerAddress = "localhost";
-	String secondarServerAddress = "168.182.214.42";
+	String primaryServerAddress = "194.210.174.8";
+	String secondarServerAddress = "194.210.175.190";
 	int serversocketport = 7000;
 	String localDirectory = System.getProperty("user.dir") + "\\Home";
 
