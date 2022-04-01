@@ -165,8 +165,6 @@ public class ucServer extends Thread
                 udpSocket.receive(DpReceived);
                 System.out.println("[UDP CONNECTION] - Recebemos: " + data(receive));
 
-                System.out.println("TESTES: Inet:" + udpSocket.getInetAddress() + "     Local:" + udpSocket.getLocalAddress());
-
                 thisServer.isPrimary = false;
 
                 udpSocket.close();

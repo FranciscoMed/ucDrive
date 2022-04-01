@@ -20,33 +20,34 @@ public class udpReceiveFileClass extends Thread
             socket = new DatagramSocket(9876);
             byte[] incomingData = new byte[1024 * 1000 * 50];
 
+            while (true)
+            {
+                DatagramPacket incomingPacket = new DatagramPacket(incomingData, incomingData.length);
+                socket.receive(incomingPacket);
 
-            DatagramPacket incomingPacket = new DatagramPacket(incomingData, incomingData.length);
-            socket.receive(incomingPacket);
-
-            System.out.println("DEPOIS DO RECEIVE INICIAL");
+                System.out.println("DEPOIS DO RECEIVE INICIAL");
 
 
-            byte[] data = incomingPacket.getData();
-            ByteArrayInputStream in = new ByteArrayInputStream(data);
-            ObjectInputStream is = new ObjectInputStream(in);
-            fileEvent = (FileEvent) is.readObject();
-            if (fileEvent.getStatus().equalsIgnoreCase("Error")) {
-                System.out.println("Some issue happened while packing the data @ client side");
-                System.exit(0);
+                byte[] data = incomingPacket.getData();
+                ByteArrayInputStream in = new ByteArrayInputStream(data);
+                ObjectInputStream is = new ObjectInputStream(in);
+                fileEvent = (FileEvent) is.readObject();
+                if (fileEvent.getStatus().equalsIgnoreCase("Error")) {
+                    System.out.println("Some issue happened while packing the data @ client side");
+                    System.exit(0);
+                }
+                createAndWriteFile(); // writing the file to hard disk
+                InetAddress IPAddress = incomingPacket.getAddress();
+                int port = incomingPacket.getPort();
+                String reply = "Thank you for the message";
+                byte[] replyBytea = reply.getBytes();
+                DatagramPacket replyPacket =
+                        new DatagramPacket(replyBytea, replyBytea.length, IPAddress, port);
+                socket.send(replyPacket);
+                Thread.sleep(3000);
+
+                System.out.println("FIM");
             }
-            createAndWriteFile(); // writing the file to hard disk
-            InetAddress IPAddress = incomingPacket.getAddress();
-            int port = incomingPacket.getPort();
-            String reply = "Thank you for the message";
-            byte[] replyBytea = reply.getBytes();
-            DatagramPacket replyPacket =
-                    new DatagramPacket(replyBytea, replyBytea.length, IPAddress, port);
-            socket.send(replyPacket);
-            Thread.sleep(3000);
-
-            System.out.println("FIM");
-
         }
         catch (Exception e)
         {
@@ -67,7 +68,8 @@ public class udpReceiveFileClass extends Thread
         }
         File dstFile = new File(outputFile);
         FileOutputStream fileOutputStream = null;
-        try {
+        try
+        {
             fileOutputStream = new FileOutputStream(dstFile);
             fileOutputStream.write(fileEvent.getFileData());
             fileOutputStream.flush();
