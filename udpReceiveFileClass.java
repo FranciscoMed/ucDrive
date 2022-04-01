@@ -13,8 +13,6 @@ public class udpReceiveFileClass extends Thread
 
     public void createAndListenSocket()
     {
-        System.out.println("Extend a thread.");
-
         try
         {
             socket = new DatagramSocket(9876);
@@ -25,45 +23,37 @@ public class udpReceiveFileClass extends Thread
                 DatagramPacket incomingPacket = new DatagramPacket(incomingData, incomingData.length);
                 socket.receive(incomingPacket);
 
-                System.out.println("DEPOIS DO RECEIVE INICIAL");
-
-
                 byte[] data = incomingPacket.getData();
                 ByteArrayInputStream in = new ByteArrayInputStream(data);
                 ObjectInputStream is = new ObjectInputStream(in);
                 fileEvent = (FileEvent) is.readObject();
-                if (fileEvent.getStatus().equalsIgnoreCase("Error")) {
-                    System.out.println("Some issue happened while packing the data @ client side");
+                if (fileEvent.getStatus().equalsIgnoreCase("Error"))
+                {
+                    System.out.println("Houve erros no envio do ficheiro!");
                     System.exit(0);
                 }
                 createAndWriteFile(); // writing the file to hard disk
                 InetAddress IPAddress = incomingPacket.getAddress();
                 int port = incomingPacket.getPort();
-                String reply = "Thank you for the message";
-                byte[] replyBytea = reply.getBytes();
-                DatagramPacket replyPacket =
-                        new DatagramPacket(replyBytea, replyBytea.length, IPAddress, port);
+                byte[] reply = "Thank you for the file!".getBytes();
+                DatagramPacket replyPacket = new DatagramPacket(reply, reply.length, IPAddress, port);
                 socket.send(replyPacket);
                 Thread.sleep(3000);
-
-                System.out.println("FIM");
             }
         }
         catch (Exception e)
         {
-            System.out.println("[Server Secundário] - A recepção de ficheiros para backup teve erros:");
+            System.out.println("[Server Secundário | UDP BACKUP] - A recepção de ficheiros para backup teve erros:");
             System.out.println(e.getMessage());
         }
     }
 
     public void createAndWriteFile()
     {
-
         String outputFile = System.getProperty("user.dir") + "\\" + fileEvent.getDestinationDirectory();
 
-        System.out.println("PATH ------------------> " + outputFile);
-
-        if (!new File(fileEvent.getDestinationDirectory()).exists()) {
+        if (!new File(fileEvent.getDestinationDirectory()).exists())
+        {
             new File(fileEvent.getDestinationDirectory()).mkdirs();
         }
         File dstFile = new File(outputFile);
@@ -74,22 +64,20 @@ public class udpReceiveFileClass extends Thread
             fileOutputStream.write(fileEvent.getFileData());
             fileOutputStream.flush();
             fileOutputStream.close();
-            System.out.println("Output file : " + outputFile + " is successfully saved ");
+            System.out.println("[UDP BACKUP] - Ficheiro: " + outputFile + " guardado com sucesso!");
 
         }
         catch (Exception e)
         {
-            System.out.println("[Server Secundário] - A leitura do ficheiros para backup teve erros:");
+            System.out.println("[Server Secundário | UDP BACKUP] - A leitura do ficheiros para backup teve erros:");
             System.out.println(e.getMessage());
             fileEvent.setStatus("Error");
         }
 
     }
 
-    public static void main(String[] args) {
-
-        System.out.println("ENTROU NO SERVER CLASS DO UDP");
-
+    public static void main(String[] args)
+    {
         udpReceiveFileClass server = new udpReceiveFileClass();
         server.createAndListenSocket();
     }

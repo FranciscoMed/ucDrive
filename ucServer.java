@@ -88,7 +88,7 @@ public class ucServer extends Thread
         {
             public void run()
             {
-                    tcpRunningThread(servidorAtual, serverPort);
+                    tcpRunningThread(servidorAtual);
             }
         };
 
@@ -97,7 +97,7 @@ public class ucServer extends Thread
         {
             public void run()
             {
-                udpRunningThread(servidorAtual, serverPort);
+                udpRunningThread(servidorAtual);
             }
         };
 
@@ -194,11 +194,11 @@ public class ucServer extends Thread
     }
 
     // Thread das comunicaçõs UDP entre o servidor principal e os clientes
-    public static synchronized void tcpRunningThread(ucServer thisServer, int port)
+    public static synchronized void tcpRunningThread(ucServer thisServer)
     {
         try
         {
-            System.out.println("[TCP CONNECTION] - À Escuta no Porto " + port);
+            System.out.println("[TCP CONNECTION] - À Escuta no Porto " + thisServer.ServerPort);
 
             ServerSocket thisSocket = thisServer.getListenSocket();
 
@@ -222,7 +222,7 @@ public class ucServer extends Thread
     }
 
     // Thread das comunicaçõs UDP entre os servidores
-    public static void udpRunningThread(ucServer thisServer, int firstPort)
+    public static void udpRunningThread(ucServer thisServer)
     {
         if (thisServer.isPrimary)
         {
@@ -230,8 +230,8 @@ public class ucServer extends Thread
             try
             {
                 // Cria o socket que vai ler os pings.
-                DatagramSocket udpSocket = new DatagramSocket(firstPort);
-                System.out.println("[UDP CONNECTION] - LISTENING SOCKET CREATED ON PORT: " + firstPort);
+                DatagramSocket udpSocket = new DatagramSocket(thisServer.ServerPort);
+                System.out.println("[UDP CONNECTION] - LISTENING SOCKET CREATED ON PORT: " + thisServer.ServerPort);
                 byte[] receive = new byte[65535];
                 DatagramPacket DpReceive = null;
 
@@ -244,10 +244,11 @@ public class ucServer extends Thread
                     udpSocket.receive(DpReceive);
 
                     thisServer.secondaryAddress = String.valueOf(DpReceive.getAddress()).substring(1);
-                    System.out.println("[UDP CONNECTION] - Recebemos: " + data(receive));
+                    // System.out.println("[UDP CONNECTION] - Recebemos: " + data(receive));
 
                     // Envia o ping de volta!
                     udpSocket.send(DpReceive);
+
                     // Limpa o buffer
                     receive = new byte[65535];
                 }
@@ -285,7 +286,7 @@ public class ucServer extends Thread
                     buffer = "PING".getBytes();
 
                     // Step 2 : Create the datagramPacket for sending the data.
-                    DatagramPacket DpSend = new DatagramPacket(buffer, buffer.length, ip, firstPort);
+                    DatagramPacket DpSend = new DatagramPacket(buffer, buffer.length, ip, thisServer.ServerPort);
 
                     // Step 3 : invoke the send call to actually send the data.
                     udpSocket.send(DpSend);

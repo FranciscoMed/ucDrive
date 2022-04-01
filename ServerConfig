@@ -1,4 +1,4 @@
 heartbeat: 5
 failbeat: 2
 primaryPort: 7000
-neighborAddress: 194.210.175.190
+neighborAddress: localhost

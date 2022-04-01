@@ -175,7 +175,7 @@ class Connection extends Thread
                 user = new User(usernameReceived, passwordReceived);
 
                 // Leitura dos clientes a fazer login
-                System.out.println("Received from client[" + thread_number + "] - Username: " + user.getUsername());
+                System.out.println("[TCP Server] - Received from client[" + thread_number + "] - Username: " + user.getUsername());
 
                 User foundUser = null;
 
@@ -258,8 +258,6 @@ class Connection extends Thread
         {
             System.out.println("[TCP Server] - Waiting for commands from " + user.getUsername());
 
-            System.out.println("TESTES -> THIS SERVER Nº OF CONNECTIONS: " + servidorLigado.numberConnections);
-
             // Apenas lê quando houver algo a ler
             String escolhaCliente = in.readUTF();
 
@@ -332,9 +330,6 @@ class Connection extends Thread
                     String fileUploadedName = uploadFile(user, diretoriaAtual);
 
                     String inputRelativeFilePath = "\\Servidor 1\\Users" + "\\" + user.getDirectory() + "\\" + fileUploadedName;
-
-                    System.out.println("teste -------> " + servidorLigado.neighborAddress);
-
 
                     // Thread para receber ficheiros por UDP do servidor principal
                     (new Thread()
