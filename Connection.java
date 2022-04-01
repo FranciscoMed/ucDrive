@@ -24,7 +24,8 @@ class Connection extends Thread
         this.servidorLigado = servidorPrimario;
         this.filesPort = 6500 + servidorLigado.numberConnections;
 
-        try {
+        try
+        {
             clientSocket = aClientSocket;
 
             outo = new ObjectOutputStream(clientSocket.getOutputStream());
@@ -44,7 +45,7 @@ class Connection extends Thread
     {
         servidorLigado.numberConnections = servidorLigado.numberConnections + 1;
 
-        System.out.println("Root Folder Path > " + ucServer.rootFolderPath);
+        System.out.println("[TCP Server] - Root Folder Path > " + ucServer.rootFolderPath);
 
         // Se quisermos adicionar USERS manualmente usando o Ficheiro de texto
         /*
@@ -89,8 +90,6 @@ class Connection extends Thread
             e.printStackTrace();
         }
          */
-
-        System.out.println();
 
         // Faz o login do user e passa para o menu
         login(servidorLigado.usersConnected);
@@ -155,7 +154,6 @@ class Connection extends Thread
     public synchronized void login(List<String> usersConnected)
     {
         List<User> users = new ArrayList<>();
-        System.out.println(ucServer.rootFolderPath);
         String configPath = ucServer.rootFolderPath + "\\UsersConfig";
 
         users = ReadUsersFromFile(configPath);

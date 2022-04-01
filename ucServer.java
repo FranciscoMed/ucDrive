@@ -141,14 +141,12 @@ public class ucServer extends Thread
             DatagramSocket udpSocket = new DatagramSocket();
             InetAddress ip = InetAddress.getByName(thisServer.neighborAddress);
 
-            System.out.println("neighborAddress: " + thisServer.neighborAddress);
-
             // convert the String input into the byte array.
             byte buffer[] = "PRIMARY".getBytes();
 
             // Step 2 : Create the datagramPacket for sending the data.
             DatagramPacket DpSend = new DatagramPacket(buffer, buffer.length, ip, thisServer.ServerPort);
-            System.out.println("[UDP CONNECTION] SendTo: " + DpSend.getSocketAddress());
+            System.out.println("[UDP CONNECTION] NeighborAddress checking: " + DpSend.getSocketAddress());
 
             buffer = null;
 

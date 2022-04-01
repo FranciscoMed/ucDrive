@@ -4,14 +4,55 @@ import java.util.*;
 
 public class ucClient
 {
-	String primaryServerAddress = "194.210.174.8";
-	String secondarServerAddress = "194.210.175.190";
-	int serversocketport = 7000;
+	String primaryServerAddress;
+	String secondaryServerAddress;
+	int serversocketport;
 	String localDirectory = System.getProperty("user.dir") + "\\Home";
+
+	public ucClient(String primaryServerAddress, String secondaryServerAddress, int serversocketport)
+	{
+		this.primaryServerAddress = primaryServerAddress;
+		this.secondaryServerAddress = secondaryServerAddress;
+		this.serversocketport = serversocketport;
+	}
 
 	public static void main(String[] args)
 	{
-		ucClient localClient = new ucClient();
+		String primaryServerAddress = "194.210.174.8";
+		String secondaryServerAddress = "194.210.175.190";
+		int serversocketport = 7000;
+
+		// Leitura do ficheiro config dos clients
+		try
+		{
+			String configClientFilePath = System.getProperty("user.dir") + "\\Home\\ClientConfig";
+			File config = new File(configClientFilePath);
+			BufferedReader br = new BufferedReader(new FileReader(config));
+			String serverConfig;
+
+			while ((serverConfig = br.readLine()) != null)
+			{
+				if (serverConfig.contains("primaryServerAddress:"))
+				{
+					primaryServerAddress = serverConfig.substring(22);
+				}
+				else if (serverConfig.contains("secondaryServerAddress:"))
+				{
+					secondaryServerAddress =  serverConfig.substring(24);
+				}
+				else if(serverConfig.contains("serversocketport:"))
+				{
+					serversocketport =  Integer.parseInt(serverConfig.substring((18)));
+				}
+			}
+		}
+		catch (IOException e)
+		{
+			System.out.println("[Server side] - Falha na leitura da config do cliente. Usará os valores default [PrimaryServerAddress:" + primaryServerAddress + "|secondaryServerAddress:" + secondaryServerAddress + "|ServerSocketPort:" + serversocketport + "]");
+			System.out.println("[Server side] - Error: " + e.getMessage());
+		}
+
+		ucClient localClient = new ucClient(primaryServerAddress, secondaryServerAddress, serversocketport);
 
 		// Percorre o menu cliente sempre, até ser fechado pelo próprio cliente
 		while(menuCliente(localClient));
@@ -53,8 +94,8 @@ public class ucClient
 						System.out.println("[CLIENT SIDE] - Este Host não é reconhecido - Port: " + localClient.serversocketport + " no Endereço: "+ localClient.primaryServerAddress);
 
 						String aux = localClient.primaryServerAddress;
-						localClient.primaryServerAddress = localClient.secondarServerAddress;
-						localClient.secondarServerAddress = aux;
+						localClient.primaryServerAddress = localClient.secondaryServerAddress;
+						localClient.secondaryServerAddress = aux;
 
 						System.out.println("[CLIENT SIDE] - Irá tentar conectar no Servidor secundário - Port: " + localClient.serversocketport + " no Endereço: "+ localClient.primaryServerAddress);
 
@@ -65,8 +106,8 @@ public class ucClient
 						System.out.println("[CLIENT SIDE] - Conexao recusada no Port: " + localClient.serversocketport + " no Endereço: "+ localClient.primaryServerAddress);
 
 						String aux = localClient.primaryServerAddress;
-						localClient.primaryServerAddress = localClient.secondarServerAddress;
-						localClient.secondarServerAddress = aux;
+						localClient.primaryServerAddress = localClient.secondaryServerAddress;
+						localClient.secondaryServerAddress = aux;
 
 						System.out.println("[CLIENT SIDE] - Irá tentar conectar no Servidor secundário - Port: " + localClient.serversocketport + " no Endereço: "+ localClient.primaryServerAddress);
 
@@ -75,7 +116,7 @@ public class ucClient
 
 					if(!errorexist)
 					{
-						System.out.println("SOCKET = " + s);
+						System.out.println("TCP " + s);
 
 						clientStreams = new StreamsClass(s);
 						in = clientStreams.getIn();
