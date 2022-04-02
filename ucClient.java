@@ -6,21 +6,22 @@ public class ucClient
 {
 	String primaryServerAddress;
 	String secondaryServerAddress;
-	int serversocketport;
+	int serversocketport, secondarysocketport;
 	String localDirectory = System.getProperty("user.dir") + "\\Home";
 
-	public ucClient(String primaryServerAddress, String secondaryServerAddress, int serversocketport)
+	public ucClient(String primaryServerAddress, String secondaryServerAddress, int serversocketport, int secondarysocketport)
 	{
 		this.primaryServerAddress = primaryServerAddress;
 		this.secondaryServerAddress = secondaryServerAddress;
 		this.serversocketport = serversocketport;
+		this.secondarysocketport = secondarysocketport;
 	}
 
 	public static void main(String[] args)
 	{
 		String primaryServerAddress = "194.210.174.8";
 		String secondaryServerAddress = "194.210.175.190";
-		int serversocketport = 7000;
+		int serversocketport = 7000 , secondarysocketport = 7000;
 
 		// Leitura do ficheiro config dos clients
 		try
@@ -44,6 +45,10 @@ public class ucClient
 				{
 					serversocketport =  Integer.parseInt(serverConfig.substring((18)));
 				}
+				else if(serverConfig.contains("secondarysocketport:"))
+				{
+					secondarysocketport =  Integer.parseInt(serverConfig.substring((21)));
+				}
 			}
 		}
 		catch (IOException e)
@@ -52,9 +57,9 @@ public class ucClient
 			System.out.println("[Server side] - Error: " + e.getMessage());
 		}
 
-		ucClient localClient = new ucClient(primaryServerAddress, secondaryServerAddress, serversocketport);
+		ucClient localClient = new ucClient(primaryServerAddress, secondaryServerAddress, serversocketport, secondarysocketport);
 
-		// Percorre o menu cliente sempre, até ser fechado pelo próprio cliente
+		// Corre o menu cliente sempre, até ser fechado pelo próprio cliente
 		while(menuCliente(localClient));
     }
 
@@ -63,6 +68,7 @@ public class ucClient
 		Socket s = null;
 		try
 		{
+			System.out.println(localClient.secondarysocketport);
 			StreamsClass clientStreams;
 			DataInputStream in;
 			ObjectInputStream ino;
@@ -106,8 +112,11 @@ public class ucClient
 						System.out.println("[CLIENT SIDE] - Conexao recusada no Port: " + localClient.serversocketport + " no Endereço: "+ localClient.primaryServerAddress);
 
 						String aux = localClient.primaryServerAddress;
+						int portaux = localClient.serversocketport;
 						localClient.primaryServerAddress = localClient.secondaryServerAddress;
+						localClient.serversocketport = localClient.secondarysocketport;
 						localClient.secondaryServerAddress = aux;
+						localClient.secondarysocketport = portaux;
 
 						System.out.println("[CLIENT SIDE] - Irá tentar conectar no Servidor secundário - Port: " + localClient.serversocketport + " no Endereço: "+ localClient.primaryServerAddress);
 
@@ -487,16 +496,16 @@ public class ucClient
 	private static void changeServerRouting(ucClient localClient, Scanner myScanner)
 	{
 
-
-
 		System.out.println("[Client Side] > " + "Mudar Endereço e Port de Servidor");
 
-		System.out.println("[Client Side] > " + "[0] Endereço");
-		System.out.println("[Client Side] > " + "[1] Port");
+		System.out.println("[Client Side] > " + "[0] Servidor primário");
+		System.out.println("[Client Side] > " + "[1] Servidor secundário");
+
+
 		String escolha = myScanner.nextLine();
 		while(!isInteger(escolha) || (!escolha.equals("0") && !escolha.equals("1")))
 		{
-			System.out.println("Valor incorrecto.Introduza novamente:\n[0] Alterar PW  \n[1] Alterar endereços");
+			System.out.println("Valor incorrecto.Introduza novamente:\n[0] Servidor primário  \n[1] Servidor secundário");
 			System.out.print("-- ");
 			escolha = myScanner.nextLine();
 		}
@@ -505,13 +514,21 @@ public class ucClient
 			System.out.println("[Client Side] > " + "O enderenço atual é: " + localClient.primaryServerAddress);
 			System.out.println("[Client Side] > " + "Escreva o Endereço pretendido:");
 			localClient.primaryServerAddress = myScanner.nextLine();
+			System.out.println("[Client Side] > " + "A porta atual é: " + localClient.serversocketport);
+			System.out.println("[Client Side] > " + "Escreva o Port pretendido:");
+			localClient.serversocketport = Integer.parseInt(myScanner.nextLine());
+
 			System.out.println("[Client Side] > " + "Alterado com sucesso");
 		}
 		else
 		{
-			System.out.println("[Client Side] > " + "O ederenço atual é: " + localClient.serversocketport);
+			System.out.println("[Client Side] > " + "O enderenço atual é: " + localClient.secondaryServerAddress);
+			System.out.println("[Client Side] > " + "Escreva o Endereço pretendido:");
+			localClient.secondaryServerAddress = myScanner.nextLine();
+			System.out.println("[Client Side] > " + "A porta atual é: " + localClient.secondarysocketport);
 			System.out.println("[Client Side] > " + "Escreva o Port pretendido:");
-			localClient.serversocketport = Integer.parseInt(myScanner.nextLine());
+			localClient.secondarysocketport = Integer.parseInt(myScanner.nextLine());
+
 			System.out.println("[Client Side] > " + "Alterado com sucesso");
 		}
 

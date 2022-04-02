@@ -14,7 +14,6 @@ public class UploadConnection extends Thread
         this.filename = filename;
         this.path =path;
         this.start();
-
     }
 
 

@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="ucDrive:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/ucDrive_jar</output-path>
+    <root id="archive" name="ucDrive.jar">
+      <element id="module-output" name="ucDrive" />
+    </root>
+  </artifact>
+</component>
